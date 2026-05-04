@@ -365,7 +365,7 @@ export default function BalanceSheet({
                                     </div>
                                 </CardHeader>
                                 <CardContent className="min-h-0 px-0 pb-0 pt-0">
-                                    <div className="overflow-x-auto px-4 pb-5 sm:px-6 sm:pb-6">
+                                    <div className="overflow-x-auto lg:overflow-x-visible scrollbar-hide px-4 pb-5 sm:px-6 sm:pb-6">
                                         <table className="w-full min-w-[520px] table-fixed text-sm">
                                             <colgroup>
                                                 <col className="w-[16%]" />
