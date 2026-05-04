@@ -1,0 +1,12 @@
+deployment:
+  tasks:
+    - export DEPLOYPATH=${DEPLOYPATH:-$PWD}
+    - cd "$DEPLOYPATH"
+    - /usr/local/bin/composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+    - php artisan migrate --force
+    - php artisan config:cache
+    - php artisan route:cache || true
+    - php artisan view:cache
+    - php artisan event:cache || true
+    - if command -v npm >/dev/null 2>&1; then npm ci && npm run build; fi
+    - php artisan storage:link || true
