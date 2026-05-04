@@ -1426,9 +1426,9 @@ return;
                                         ))}
                                     </div>
 
-                                    <div className="hidden min-w-0 overflow-x-hidden sm:block">
+                                    <div className="hidden min-w-0 overflow-x-auto sm:block">
                                         <TooltipProvider delayDuration={150}>
-                                            <table className="w-full table-fixed border-separate border-spacing-0 text-sm font-normal leading-snug">
+                                            <table className="w-full min-w-[820px] table-fixed border-separate border-spacing-0 text-sm font-normal leading-snug">
                                             <colgroup>
                                                 <col className="w-[12%]" />
                                                 <col className="w-[17%]" />
