@@ -18,6 +18,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class TransactionSettlement extends Model
 {
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'transaction_id' => 'integer',
+            'user_id' => 'integer',
+            'category_id' => 'integer',
+            'sort_order' => 'integer',
+        ];
+    }
+
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);

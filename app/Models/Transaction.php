@@ -27,6 +27,22 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class Transaction extends Model
 {
+    /**
+     * Casts keep foreign keys as integers. MySQL/PDO can return them as strings; strict
+     * `user_id !== auth()->id()` would then fail with 403 on show/update/delete.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'user_id' => 'integer',
+            'category_id' => 'integer',
+            'contact_id' => 'integer',
+            'sort_order' => 'integer',
+        ];
+    }
+
     protected static function booted(): void
     {
         static::deleting(function (Transaction $transaction): void {
