@@ -13,6 +13,19 @@ return new class extends Migration
         // so we guard on column presence to avoid duplicate index/constraint errors.
         if (! Schema::hasColumn('ledger_entries', 'settlement_id')) {
             Schema::table('ledger_entries', function (Blueprint $table) {
+                /*
+                 * MySQL cannot drop the unique index `ledger_entries_transaction_id_unique`
+                 * while the foreign key on `transaction_id` still depends on it.
+                 * Drop the FK first, then rebuild it after the new composite unique exists.
+                 */
+                foreach (Schema::getForeignKeys('ledger_entries') as $foreignKey) {
+                    $cols = $foreignKey['columns'] ?? [];
+
+                    if ($cols === ['transaction_id']) {
+                        $table->dropForeign($foreignKey['name']);
+                    }
+                }
+
                 // Allow multiple ledger entries per transaction (base + settlement lines)
                 $table->dropUnique(['transaction_id']);
                 $table->foreignId('settlement_id')
@@ -21,6 +34,11 @@ return new class extends Migration
                     ->constrained('transaction_settlements')
                     ->cascadeOnDelete();
                 $table->unique(['transaction_id', 'settlement_id']);
+
+                $table->foreign('transaction_id')
+                    ->references('id')
+                    ->on('transactions')
+                    ->cascadeOnDelete();
             });
         }
 
