@@ -1,0 +1,1584 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla&display=swap');
+
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --font-bengali:
+        'Tiro Bangla', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* Bengali: Tiro Bangla — `LocaleSync` adds `locale-bn` on `<html>`. */
+html.locale-bn body {
+    font-family: var(--font-bengali);
+}
+
+/* Brand violet (#705CFC) — light */
+:root {
+    --background: oklch(0.985 0.01 300);
+    --foreground: oklch(0.2 0.03 300);
+    --card: oklch(0.995 0.006 300);
+    --card-foreground: oklch(0.2 0.03 300);
+    --popover: oklch(0.995 0.006 300);
+    --popover-foreground: oklch(0.2 0.03 300);
+    --primary: #705cfc;
+    --primary-foreground: oklch(0.985 0.01 300);
+    --secondary: oklch(0.945 0.03 300);
+    --secondary-foreground: oklch(0.26 0.05 300);
+    --muted: oklch(0.955 0.02 300);
+    --muted-foreground: oklch(0.48 0.06 300);
+    --accent: oklch(0.93 0.05 300);
+    --accent-foreground: oklch(0.26 0.06 300);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.985 0.01 300);
+    --border: oklch(0.9 0.03 300);
+    --input: oklch(0.9 0.03 300);
+    --ring: #705cfc;
+    --chart-1: #705cfc;
+    --chart-2: oklch(0.7 0.16 275);
+    --chart-3: oklch(0.62 0.19 330);
+    --chart-4: oklch(0.76 0.12 305);
+    --chart-5: oklch(0.52 0.2 290);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.975 0.012 300);
+    --sidebar-foreground: oklch(0.22 0.04 300);
+    --sidebar-primary: #705cfc;
+    --sidebar-primary-foreground: oklch(0.985 0.01 300);
+    --sidebar-accent: oklch(0.94 0.03 300);
+    --sidebar-accent-foreground: oklch(0.26 0.05 300);
+    --sidebar-border: oklch(0.9 0.03 300);
+    --sidebar-ring: #705cfc;
+}
+
+/* Brand violet (#705CFC) — dark */
+.dark {
+    --background: oklch(0.16 0.02 300);
+    --foreground: oklch(0.97 0.01 300);
+    --card: oklch(0.19 0.025 300);
+    --card-foreground: oklch(0.97 0.01 300);
+    --popover: oklch(0.19 0.025 300);
+    --popover-foreground: oklch(0.97 0.01 300);
+    --primary: #705cfc;
+    --primary-foreground: oklch(0.18 0.03 300);
+    --secondary: oklch(0.26 0.03 300);
+    --secondary-foreground: oklch(0.97 0.01 300);
+    --muted: oklch(0.26 0.025 300);
+    --muted-foreground: oklch(0.76 0.03 300);
+    --accent: oklch(0.3 0.05 300);
+    --accent-foreground: oklch(0.98 0.01 300);
+    --destructive: oklch(0.46 0.18 27.325);
+    --destructive-foreground: oklch(0.98 0.01 300);
+    --border: oklch(0.29 0.03 300);
+    --input: oklch(0.29 0.03 300);
+    --ring: #705cfc;
+    --chart-1: #705cfc;
+    --chart-2: oklch(0.7 0.14 275);
+    --chart-3: oklch(0.68 0.16 330);
+    --chart-4: oklch(0.78 0.12 305);
+    --chart-5: oklch(0.64 0.17 290);
+    --sidebar: oklch(0.2 0.025 300);
+    --sidebar-foreground: oklch(0.97 0.01 300);
+    --sidebar-primary: #705cfc;
+    --sidebar-primary-foreground: oklch(0.18 0.03 300);
+    --sidebar-accent: oklch(0.26 0.03 300);
+    --sidebar-accent-foreground: oklch(0.97 0.01 300);
+    --sidebar-border: oklch(0.29 0.03 300);
+    --sidebar-ring: #705cfc;
+}
+/* Font Family Configuration */
+@layer base {
+    html {
+        font-family:
+            'Instrument Sans',
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
+        font-display: swap;
+        font-size: 18px;
+    }
+
+    body {
+        font-family:
+            'Instrument Sans',
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
+        font-display: swap;
+    }
+
+    .font-display {
+        font-family:
+            'Instrument Sans',
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+    }
+
+    .font-body {
+        font-family:
+            'Instrument Sans',
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            sans-serif;
+    }
+}
+
+/* Global Scrollbar Styles - Hide default scrollbars and apply custom ones */
+@layer base {
+    /* Hide scrollbars globally but maintain scroll functionality */
+    html {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
+    }
+
+    html::-webkit-scrollbar {
+        display: none; /* Safari and Chrome */
+    }
+
+    body {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
+    }
+
+    body::-webkit-scrollbar {
+        display: none; /* Safari and Chrome */
+    }
+
+    /* Apply custom scrollbars to all scrollable elements */
+    * {
+        scrollbar-width: thin; /* Firefox */
+    }
+
+    *::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background-color: rgb(209 213 219);
+        border-radius: 3px;
+        transition: background-color 0.2s ease;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(156 163 175);
+    }
+
+    *::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    /* Dark mode scrollbars */
+    .dark *::-webkit-scrollbar-thumb {
+        background-color: rgb(75 85 99);
+    }
+
+    .dark *::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+
+    /* Dark mode text visibility fixes */
+    .dark {
+        color-scheme: dark;
+    }
+
+    /* Browser compatibility fixes */
+
+    /* Flexbox fallbacks for older browsers */
+    .flex {
+        display: -webkit-box; /* OLD - iOS 6-, Safari 3.1-6 */
+        display: -webkit-flex; /* NEW - Safari 6.1+. iOS 7.1+ */
+        display: -ms-flexbox; /* TWEENER - IE 10 */
+        display: flex; /* NEW - Chrome 21+, Opera 12.1+ */
+    }
+
+    .flex-col {
+        -webkit-flex-direction: column;
+        -ms-flex-direction: column;
+        flex-direction: column;
+    }
+
+    .items-center {
+        -webkit-box-align: center;
+        -webkit-align-items: center;
+        -ms-flex-align: center;
+        align-items: center;
+    }
+
+    .justify-center {
+        -webkit-box-pack: center;
+        -webkit-justify-content: center;
+        -ms-flex-pack: center;
+        justify-content: center;
+    }
+
+    /* Grid fallbacks for older browsers */
+    .grid {
+        display: -ms-grid;
+        display: grid;
+    }
+
+    /* CSS Custom Properties fallbacks */
+    :root {
+        /* Fallback colors for browsers that don't support CSS custom properties */
+        --border-fallback: #e2e8f0;
+        --input-fallback: #ffffff;
+        --background-fallback: #ffffff;
+        --foreground-fallback: #0f172a;
+        --primary-fallback: #3b82f6;
+        --secondary-fallback: #f1f5f9;
+    }
+
+    /* Fallbacks for oklch colors (match default #705CFC theme) */
+    html {
+        background-color: #faf9ff; /* Fallback */
+        background-color: oklch(0.985 0.01 300);
+    }
+
+    html.dark {
+        background-color: #16141f; /* Fallback */
+        background-color: oklch(0.16 0.02 300);
+    }
+
+    html.theme-violet {
+        background-color: #faf9ff; /* Fallback */
+        background-color: oklch(0.985 0.01 300);
+    }
+
+    html.theme-violet.dark {
+        background-color: #16141f; /* Fallback */
+        background-color: oklch(0.16 0.02 300);
+    }
+
+    /* Feature-based CSS fallbacks */
+
+    /* Grid fallbacks for browsers without grid support */
+    .no-grid .grid {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .no-grid .grid-cols-1 > * {
+        flex: 1 1 100%;
+    }
+
+    .no-grid .grid-cols-2 > * {
+        flex: 1 1 50%;
+    }
+
+    .no-grid .grid-cols-3 > * {
+        flex: 1 1 33.333%;
+    }
+
+    .no-grid .grid-cols-4 > * {
+        flex: 1 1 25%;
+    }
+
+    /* Flexbox fallbacks for older browsers */
+    .no-flexbox .flex {
+        display: block;
+    }
+
+    .no-flexbox .flex > * {
+        display: inline-block;
+        vertical-align: top;
+    }
+
+    /* CSS Variables fallbacks */
+    .no-css-vars {
+        --border: #e2e8f0;
+        --input: #ffffff;
+        --background: #ffffff;
+        --foreground: #0f172a;
+        --primary: #3b82f6;
+        --secondary: #f1f5f9;
+    }
+
+    .no-css-vars.dark {
+        --border: #374151;
+        --input: #1f2937;
+        --background: #111827;
+        --foreground: #f9fafb;
+        --primary: #60a5fa;
+        --secondary: #374151;
+    }
+
+    /* Modern color fallbacks */
+    .no-modern-colors html {
+        background-color: #faf9ff !important;
+    }
+
+    .no-modern-colors html.dark {
+        background-color: #16141f !important;
+    }
+
+    .no-modern-colors html.theme-violet {
+        background-color: #faf9ff !important;
+    }
+
+    .no-modern-colors html.theme-violet.dark {
+        background-color: #16141f !important;
+    }
+
+    /* Touch device optimizations */
+    .touch-device {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    .touch-device button,
+    .touch-device [role='button'] {
+        min-height: 44px; /* Minimum touch target size */
+        min-width: 44px;
+    }
+
+    /* No-touch optimizations */
+    .no-touch :hover {
+        transition: all 0.2s ease;
+    }
+
+    /* WebSocket unavailable fallbacks */
+    .no-websocket .realtime-indicator {
+        display: none;
+    }
+
+    .no-websocket .offline-notice {
+        display: block;
+        background: #fef3c7;
+        color: #92400e;
+        padding: 0.5rem;
+        text-align: center;
+        font-size: 0.875rem;
+    }
+
+    /* Ensure text is visible in dark mode */
+    .dark .text-gray-900 {
+        color: rgb(243 244 246) !important;
+    }
+
+    .dark .text-gray-800 {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark .text-gray-700 {
+        color: rgb(209 213 219) !important;
+    }
+
+    .dark .text-gray-600 {
+        color: rgb(156 163 175) !important;
+    }
+
+    /* Production-specific notification fixes */
+    .notification-toast-container {
+        position: fixed !important;
+        right: 0.5rem !important;
+        top: 1rem !important;
+        z-index: 9997 !important;
+        pointer-events: none !important;
+    }
+
+    @media (min-width: 640px) {
+        .notification-toast-container {
+            right: 1rem !important;
+        }
+    }
+
+    .notification-toast-item {
+        pointer-events: auto !important;
+        max-width: calc(100vw - 1rem) !important;
+        width: 100% !important;
+    }
+
+    @media (min-width: 640px) {
+        .notification-toast-item {
+            width: 24rem !important;
+            max-width: 24rem !important;
+        }
+    }
+
+    /* Fix toast message alignment issues in production */
+    [data-slot='toast-container'] {
+        position: fixed !important;
+        top: 1rem !important;
+        right: 1rem !important;
+        z-index: 9999 !important;
+        pointer-events: none !important;
+    }
+
+    [data-slot='toast-item'] {
+        pointer-events: auto !important;
+        margin-bottom: 0.5rem !important;
+        transform: translateX(0) !important;
+    }
+
+    /* Ensure success messages are properly styled */
+    .toast-success {
+        background-color: rgb(34 197 94) !important;
+        color: white !important;
+        border: none !important;
+    }
+
+    .dark .text-gray-500 {
+        color: rgb(107 114 128) !important;
+    }
+
+    /* Dark mode form elements */
+    .dark input,
+    .dark select,
+    .dark textarea {
+        background-color: rgb(31 41 55) !important;
+        border-color: rgb(75 85 99) !important;
+        color: rgb(243 244 246) !important;
+    }
+
+    .dark input::placeholder,
+    .dark textarea::placeholder {
+        color: rgb(156 163 175) !important;
+    }
+
+    /* Dark mode buttons */
+    .dark .bg-white {
+        background-color: rgb(31 41 55) !important;
+        color: rgb(243 244 246) !important;
+        border-color: rgb(75 85 99) !important;
+    }
+
+    .dark .border-gray-300 {
+        border-color: rgb(75 85 99) !important;
+    }
+
+    .dark .hover\:bg-gray-50:hover {
+        background-color: rgb(55 65 81) !important;
+    }
+
+    /* Dark mode card backgrounds */
+    .dark .bg-red-50 {
+        background-color: rgb(127 29 29) !important;
+    }
+
+    .dark .bg-green-50 {
+        background-color: rgb(20 83 45) !important;
+    }
+
+    .dark .bg-blue-50 {
+        background-color: rgb(30 58 138) !important;
+    }
+
+    .dark .bg-yellow-50 {
+        background-color: rgb(133 77 14) !important;
+    }
+
+    .dark .bg-purple-50 {
+        background-color: rgb(88 28 135) !important;
+    }
+
+    /* Fix chart legend text visibility in dark mode - Chart.js specific */
+    .dark canvas + div {
+        color: rgb(229 231 235) !important;
+    }
+
+    /* Chart.js legend text fixes */
+    .dark .chartjs-legend {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark .chartjs-legend * {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark .chartjs-legend-item {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark .chartjs-legend-text {
+        color: rgb(229 231 235) !important;
+    }
+
+    /* Target Chart.js canvas siblings */
+    .dark canvas ~ * {
+        color: rgb(229 231 235) !important;
+    }
+
+    /* Target any text elements near charts */
+    .dark [class*='chart'] {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark [class*='chart'] * {
+        color: rgb(229 231 235) !important;
+    }
+
+    /* More specific Chart.js targeting */
+    .dark .chart-container {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark .chart-container * {
+        color: rgb(229 231 235) !important;
+    }
+
+    /* Target elements with Chart.js generated classes */
+    .dark [class*='chartjs'] {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark [class*='chartjs'] * {
+        color: rgb(229 231 235) !important;
+    }
+
+    /* Recharts fallback (if used elsewhere) */
+    .dark .recharts-legend-wrapper {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark .recharts-legend-wrapper * {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark .recharts-default-legend .recharts-legend-item {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark .recharts-default-legend .recharts-legend-item .recharts-legend-item-text {
+        fill: rgb(229 231 235) !important;
+        color: rgb(229 231 235) !important;
+    }
+
+    /* Nuclear option - target all elements after canvas in dark mode */
+    .dark canvas + * {
+        color: rgb(229 231 235) !important;
+    }
+
+    .dark canvas + * * {
+        color: rgb(229 231 235) !important;
+    }
+
+    /* Target chart legends by position */
+    .dark [style*='position'] {
+        color: rgb(229 231 235) !important;
+    }
+
+    /* Specific scrollbar styles for common elements */
+    .table-container::-webkit-scrollbar,
+    .card-content::-webkit-scrollbar,
+    .sidebar::-webkit-scrollbar,
+    .main-content::-webkit-scrollbar,
+    .overflow-auto::-webkit-scrollbar,
+    .overflow-y-auto::-webkit-scrollbar,
+    .overflow-x-auto::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .table-container::-webkit-scrollbar-thumb,
+    .card-content::-webkit-scrollbar-thumb,
+    .sidebar::-webkit-scrollbar-thumb,
+    .main-content::-webkit-scrollbar-thumb,
+    .overflow-auto::-webkit-scrollbar-thumb,
+    .overflow-y-auto::-webkit-scrollbar-thumb,
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+        background-color: rgb(209 213 219);
+        border-radius: 3px;
+        transition: background-color 0.2s ease;
+    }
+
+    .table-container::-webkit-scrollbar-thumb:hover,
+    .card-content::-webkit-scrollbar-thumb:hover,
+    .sidebar::-webkit-scrollbar-thumb:hover,
+    .main-content::-webkit-scrollbar-thumb:hover,
+    .overflow-auto::-webkit-scrollbar-thumb:hover,
+    .overflow-y-auto::-webkit-scrollbar-thumb:hover,
+    .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(156 163 175);
+    }
+
+    /* Dark mode for specific elements */
+    .dark .table-container::-webkit-scrollbar-thumb,
+    .dark .card-content::-webkit-scrollbar-thumb,
+    .dark .sidebar::-webkit-scrollbar-thumb,
+    .dark .main-content::-webkit-scrollbar-thumb,
+    .dark .overflow-auto::-webkit-scrollbar-thumb,
+    .dark .overflow-y-auto::-webkit-scrollbar-thumb,
+    .dark .overflow-x-auto::-webkit-scrollbar-thumb {
+        background-color: rgb(75 85 99);
+    }
+
+    .dark .table-container::-webkit-scrollbar-thumb:hover,
+    .dark .card-content::-webkit-scrollbar-thumb:hover,
+    .dark .sidebar::-webkit-scrollbar-thumb:hover,
+    .dark .main-content::-webkit-scrollbar-thumb:hover,
+    .dark .overflow-auto::-webkit-scrollbar-thumb:hover,
+    .dark .overflow-y-auto::-webkit-scrollbar-thumb:hover,
+    .dark .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+}
+/* Custom Scrollbar Utility Classes */
+@layer utilities {
+    .scrollbar-hide {
+        -ms-overflow-style: none; /* Internet Explorer 10+ */
+        scrollbar-width: none; /* Firefox */
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none; /* Safari and Chrome */
+    }
+
+    .scrollbar-thin {
+        scrollbar-width: thin;
+    }
+
+    .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+        background-color: rgb(209 213 219);
+        border-radius: 6px;
+    }
+
+    .scrollbar-thumb-gray-400::-webkit-scrollbar-thumb {
+        background-color: rgb(156 163 175);
+        border-radius: 6px;
+    }
+
+    .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+        background-color: rgb(75 85 99);
+        border-radius: 6px;
+    }
+
+    .scrollbar-thumb-gray-500::-webkit-scrollbar-thumb {
+        background-color: rgb(107 114 128);
+        border-radius: 6px;
+    }
+
+    .scrollbar-track-transparent::-webkit-scrollbar-track {
+        background-color: transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: rgb(209 213 219);
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(156 163 175);
+    }
+
+    /* Dark mode scrollbar */
+    .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: rgb(75 85 99);
+    }
+
+    .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+
+    /* Custom scrollbar sizes */
+    .scrollbar-xs::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    .scrollbar-sm::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .scrollbar-md::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .scrollbar-lg::-webkit-scrollbar {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* Additional scrollbar utilities */
+    .scrollbar-auto {
+        scrollbar-width: auto;
+    }
+
+    .scrollbar-auto::-webkit-scrollbar {
+        width: auto;
+        height: auto;
+    }
+
+    /* Hide scrollbar but keep functionality */
+    .scrollbar-none {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Custom scrollbar colors */
+    .scrollbar-primary::-webkit-scrollbar-thumb {
+        background-color: rgb(59 130 246);
+    }
+
+    .scrollbar-primary::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(37 99 235);
+    }
+
+    .scrollbar-secondary::-webkit-scrollbar-thumb {
+        background-color: rgb(107 114 128);
+    }
+
+    .scrollbar-secondary::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(75 85 99);
+    }
+
+    /* Sidebar-specific scrollbar utilities */
+    .scrollbar-sidebar::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+    }
+
+    .scrollbar-sidebar::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 2px;
+    }
+
+    .scrollbar-sidebar::-webkit-scrollbar-thumb {
+        background-color: rgb(156 163 175);
+        border-radius: 2px;
+        transition: background-color 0.2s ease;
+    }
+
+    .scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+
+    /* Dark mode sidebar scrollbar */
+    .dark .scrollbar-sidebar::-webkit-scrollbar-thumb {
+        background-color: rgb(75 85 99);
+    }
+
+    .dark .scrollbar-sidebar::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+}
+
+/* Optional html.theme-violet — same tokens as :root / .dark (#705CFC) */
+.theme-violet {
+    --background: oklch(0.985 0.01 300);
+    --foreground: oklch(0.2 0.03 300);
+    --card: oklch(0.995 0.006 300);
+    --card-foreground: oklch(0.2 0.03 300);
+    --popover: oklch(0.995 0.006 300);
+    --popover-foreground: oklch(0.2 0.03 300);
+    --primary: #705cfc;
+    --primary-foreground: oklch(0.985 0.01 300);
+    --secondary: oklch(0.945 0.03 300);
+    --secondary-foreground: oklch(0.26 0.05 300);
+    --muted: oklch(0.955 0.02 300);
+    --muted-foreground: oklch(0.48 0.06 300);
+    --accent: oklch(0.93 0.05 300);
+    --accent-foreground: oklch(0.26 0.06 300);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.985 0.01 300);
+    --border: oklch(0.9 0.03 300);
+    --input: oklch(0.9 0.03 300);
+    --ring: #705cfc;
+    --chart-1: #705cfc;
+    --chart-2: oklch(0.7 0.16 275);
+    --chart-3: oklch(0.62 0.19 330);
+    --chart-4: oklch(0.76 0.12 305);
+    --chart-5: oklch(0.52 0.2 290);
+    --radius: 0.625rem;
+    --sidebar: oklch(0.975 0.012 300);
+    --sidebar-foreground: oklch(0.22 0.04 300);
+    --sidebar-primary: #705cfc;
+    --sidebar-primary-foreground: oklch(0.985 0.01 300);
+    --sidebar-accent: oklch(0.94 0.03 300);
+    --sidebar-accent-foreground: oklch(0.26 0.05 300);
+    --sidebar-border: oklch(0.9 0.03 300);
+    --sidebar-ring: #705cfc;
+}
+
+.theme-violet.dark {
+    --background: oklch(0.16 0.02 300);
+    --foreground: oklch(0.97 0.01 300);
+    --card: oklch(0.19 0.025 300);
+    --card-foreground: oklch(0.97 0.01 300);
+    --popover: oklch(0.19 0.025 300);
+    --popover-foreground: oklch(0.97 0.01 300);
+    --primary: #705cfc;
+    --primary-foreground: oklch(0.18 0.03 300);
+    --secondary: oklch(0.26 0.03 300);
+    --secondary-foreground: oklch(0.97 0.01 300);
+    --muted: oklch(0.26 0.025 300);
+    --muted-foreground: oklch(0.76 0.03 300);
+    --accent: oklch(0.3 0.05 300);
+    --accent-foreground: oklch(0.98 0.01 300);
+    --destructive: oklch(0.46 0.18 27.325);
+    --destructive-foreground: oklch(0.98 0.01 300);
+    --border: oklch(0.29 0.03 300);
+    --input: oklch(0.29 0.03 300);
+    --ring: #705cfc;
+    --chart-1: #705cfc;
+    --chart-2: oklch(0.7 0.14 275);
+    --chart-3: oklch(0.68 0.16 330);
+    --chart-4: oklch(0.78 0.12 305);
+    --chart-5: oklch(0.64 0.17 290);
+    --sidebar: oklch(0.2 0.025 300);
+    --sidebar-foreground: oklch(0.97 0.01 300);
+    --sidebar-primary: #705cfc;
+    --sidebar-primary-foreground: oklch(0.18 0.03 300);
+    --sidebar-accent: oklch(0.26 0.03 300);
+    --sidebar-accent-foreground: oklch(0.97 0.01 300);
+    --sidebar-border: oklch(0.29 0.03 300);
+    --sidebar-ring: #705cfc;
+}
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    /* Horizontal clipping without overflow:auto — overflow-x:auto on root breaks position:sticky table headers */
+    html {
+        overflow-x: clip;
+        width: 100%;
+        max-width: 100vw;
+    }
+
+    body {
+        overflow-x: clip;
+        min-width: 320px; /* Minimum mobile width */
+        width: 100%;
+        max-width: 100vw;
+    }
+
+    /* Prevent horizontal scroll on mobile */
+    .mobile-container {
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+
+    /* Mobile app-like styling */
+    @media (max-width: 768px) {
+        /* Force proper width constraints */
+        * {
+            max-width: 100vw;
+            box-sizing: border-box;
+        }
+
+        /* Main container width fixes */
+        .container {
+            width: 100% !important;
+            max-width: 100vw !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+
+        /* Card width fixes */
+        .card {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-bottom: 0.75rem;
+            box-sizing: border-box;
+        }
+
+        /* Grid fixes for mobile */
+        .grid {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Remove horizontal padding on mobile for full-width experience */
+        .mobile-full-width {
+            margin-left: calc(-1 * var(--mobile-padding, 0.5rem));
+            margin-right: calc(-1 * var(--mobile-padding, 0.5rem));
+            padding-left: var(--mobile-padding, 0.5rem);
+            padding-right: var(--mobile-padding, 0.5rem);
+        }
+
+        /* Optimize touch targets for mobile */
+        button,
+        [role='button'],
+        .btn {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        /* Improve text readability on mobile */
+        h1 {
+            font-size: 1.5rem !important;
+        }
+        h2 {
+            font-size: 1.25rem !important;
+        }
+        h3 {
+            font-size: 1.125rem !important;
+        }
+
+        /* Better mobile table handling */
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100vw;
+            border-radius: 0.5rem;
+        }
+
+        /* Ensure tables can scroll horizontally on mobile */
+        table {
+            min-width: 600px; /* Minimum table width for readability */
+        }
+
+        /* Mobile table wrapper */
+        .mobile-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        /* Mobile-friendly form inputs */
+        input,
+        select,
+        textarea {
+            font-size: 16px; /* Prevents zoom on iOS */
+            padding: 0.75rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Responsive grid adjustments */
+        .grid-mobile-1 {
+            grid-template-columns: 1fr;
+        }
+
+        .grid-mobile-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        /* Fix flex containers */
+        .flex {
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* Page container fixes */
+        [data-slot='sidebar-inset'] {
+            width: 100% !important;
+            max-width: 100vw !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+    }
+
+    /* Mobile device optimizations */
+    .mobile-device {
+        /* Optimize for mobile performance */
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    .mobile-device * {
+        /* Optimize rendering */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        backface-visibility: hidden;
+    }
+
+    /* Touch device optimizations */
+    .touch-device {
+        /* Optimize for touch interactions */
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    .touch-device button,
+    .touch-device [role='button'],
+    .touch-device .btn {
+        min-height: 44px;
+        min-width: 44px;
+        touch-action: manipulation;
+    }
+
+    /* Reduced motion optimizations */
+    .reduce-motion * {
+        animation-duration: 0.1s !important;
+        transition-duration: 0.1s !important;
+        animation-delay: 0s !important;
+        transition-delay: 0s !important;
+    }
+
+    /* Network optimizations */
+    .slow-network {
+        /* Reduce animations and effects for slow networks */
+        animation-duration: 0.05s !important;
+        transition-duration: 0.05s !important;
+    }
+
+    .slow-network img {
+        /* Reduce image quality for slow networks */
+        image-rendering: pixelated;
+    }
+
+    .fast-network {
+        /* Enable full animations for fast networks */
+        animation-duration: 0.3s;
+        transition-duration: 0.3s;
+    }
+
+    /* Mobile-optimized layout */
+    .mobile-optimized-layout {
+        /* Optimize for mobile rendering */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+
+    /* Mobile container */
+    .mobile-container {
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+
+    /* Responsive table optimizations */
+    .responsive-table {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .responsive-table table {
+        min-width: 600px;
+        width: 100%;
+    }
+
+    /* Mobile card optimizations */
+    .mobile-card {
+        /* Optimize cards for mobile */
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.2s ease;
+    }
+
+    .mobile-card:active {
+        /* Provide touch feedback */
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+
+    /* Performance optimizations */
+    .performance-optimized {
+        /* Optimize for performance */
+        will-change: auto;
+        contain: layout style paint;
+    }
+
+    .performance-optimized * {
+        /* Reduce repaints */
+        backface-visibility: hidden;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+
+    /* Lazy loading optimizations */
+    .lazy-load {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .lazy-load.loaded {
+        opacity: 1;
+    }
+
+    /* Virtual scrolling optimizations */
+    .virtual-scroll-container {
+        height: 100%;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .virtual-scroll-item {
+        /* Optimize virtual scroll items */
+        contain: layout style;
+        will-change: transform;
+    }
+
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']),
+    input[type='button']:not(:disabled),
+    input[type='submit']:not(:disabled),
+    input[type='reset']:not(:disabled),
+    a,
+    [role='link'],
+    a[href] {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    [role='button'][aria-disabled='true'],
+    input[type='button']:disabled,
+    input[type='submit']:disabled,
+    input[type='reset']:disabled {
+        cursor: not-allowed;
+    }
+
+    .btn:not(:disabled),
+    [type='button']:not(:disabled),
+    [type='submit']:not(:disabled),
+    [type='reset']:not(:disabled) {
+        cursor: pointer;
+    }
+
+    /* Native <input type="date"> uses yyyy-mm-dd in JS/value and locale-aware display in the picker.
+       Do not reorder ::-webkit-datetime-edit-* (flex order breaks separators → mangled text like 02//042026). */
+
+    /* Ensure all scrollable elements use custom scrollbars */
+    [class*='overflow-'] {
+        scrollbar-width: thin;
+    }
+
+    /* Force sidebar scrollbars to be thin */
+    [data-slot='sidebar-content'] {
+        scrollbar-width: thin !important;
+    }
+
+    /* Completely hide sidebar scrollbars */
+    [data-slot='sidebar-content']::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Hide sidebar scrollbars in Firefox */
+    [data-slot='sidebar-content'] {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    /* Additional sidebar scrollbar hiding - more comprehensive */
+    .sidebar::-webkit-scrollbar,
+    .sidebar *::-webkit-scrollbar,
+    [class*='sidebar']::-webkit-scrollbar,
+    [class*='sidebar'] *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Hide scrollbars in sidebar components */
+    [data-slot*='sidebar']::-webkit-scrollbar,
+    [data-slot*='sidebar'] *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Target exact sidebar attributes */
+    [data-slot='sidebar']::-webkit-scrollbar,
+    [data-slot='sidebar'] *::-webkit-scrollbar,
+    [data-sidebar='sidebar']::-webkit-scrollbar,
+    [data-sidebar='sidebar'] *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Force hide all scrollbars in sidebar area */
+    [data-slot='sidebar'] {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    [data-sidebar='sidebar'] {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    /* Target sidebar by CSS classes */
+    .bg-sidebar::-webkit-scrollbar,
+    .bg-sidebar *::-webkit-scrollbar,
+    [class*='bg-sidebar']::-webkit-scrollbar,
+    [class*='bg-sidebar'] *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Nuclear option - hide all scrollbars in the entire left area */
+    .group[data-side='left']::-webkit-scrollbar,
+    .group[data-side='left'] *::-webkit-scrollbar,
+    .peer[data-side='left']::-webkit-scrollbar,
+    .peer[data-side='left'] *::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Override any overflow-auto in sidebar */
+    [data-slot='sidebar'] .overflow-auto,
+    [data-sidebar='sidebar'] .overflow-auto,
+    .bg-sidebar .overflow-auto {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    [data-slot='sidebar'] .overflow-auto::-webkit-scrollbar,
+    [data-sidebar='sidebar'] .overflow-auto::-webkit-scrollbar,
+    .bg-sidebar .overflow-auto::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* Main content spacing - add more space on left and right */
+    [data-slot='sidebar-inset'] {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        margin-left: 0.5rem !important;
+        margin-right: 0.5rem !important;
+    }
+
+    /* Add more space for content inside main area */
+    [data-slot='sidebar-inset'] > * {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    /* Specific spacing for admin pages */
+    [data-slot='sidebar-inset'] .admin-content {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    [class*='overflow-']::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    [class*='overflow-']::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 3px;
+    }
+
+    [class*='overflow-']::-webkit-scrollbar-thumb {
+        background-color: rgb(209 213 219);
+        border-radius: 3px;
+        transition: background-color 0.2s ease;
+    }
+
+    [class*='overflow-']::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(156 163 175);
+    }
+
+    /* Dark mode for overflow elements */
+    .dark [class*='overflow-']::-webkit-scrollbar-thumb {
+        background-color: rgb(75 85 99);
+    }
+
+    .dark [class*='overflow-']::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+
+    /* Specific sidebar scrollbar styles - HIDE THEM COMPLETELY */
+    [data-sidebar='content']::-webkit-scrollbar,
+    [data-slot='sidebar-content']::-webkit-scrollbar,
+    .sidebar::-webkit-scrollbar,
+    .sidebar-content::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    [data-sidebar='content']::-webkit-scrollbar-track,
+    [data-slot='sidebar-content']::-webkit-scrollbar-track,
+    .sidebar::-webkit-scrollbar-track,
+    .sidebar-content::-webkit-scrollbar-track {
+        display: none !important;
+        background: transparent !important;
+        border-radius: 2px;
+    }
+
+    [data-sidebar='content']::-webkit-scrollbar-thumb,
+    [data-slot='sidebar-content']::-webkit-scrollbar-thumb,
+    .sidebar::-webkit-scrollbar-thumb,
+    .sidebar-content::-webkit-scrollbar-thumb {
+        display: none !important;
+        background-color: transparent !important;
+        border-radius: 2px;
+        transition: background-color 0.2s ease;
+    }
+
+    [data-sidebar='content']::-webkit-scrollbar-thumb:hover,
+    [data-slot='sidebar-content']::-webkit-scrollbar-thumb:hover,
+    .sidebar::-webkit-scrollbar-thumb:hover,
+    .sidebar-content::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+
+    /* Dark mode sidebar scrollbars */
+    .dark [data-sidebar='content']::-webkit-scrollbar-thumb,
+    .dark [data-slot='sidebar-content']::-webkit-scrollbar-thumb,
+    .dark .sidebar::-webkit-scrollbar-thumb,
+    .dark .sidebar-content::-webkit-scrollbar-thumb {
+        background-color: rgb(75 85 99);
+    }
+
+    .dark [data-sidebar='content']::-webkit-scrollbar-thumb:hover,
+    .dark [data-slot='sidebar-content']::-webkit-scrollbar-thumb:hover,
+    .dark .sidebar::-webkit-scrollbar-thumb:hover,
+    .dark .sidebar-content::-webkit-scrollbar-thumb:hover {
+        background-color: rgb(107 114 128);
+    }
+}
+/* Print Styles for Ledger Table */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .print-content,
+    .print-content * {
+        visibility: visible;
+    }
+
+    .print-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    /* Hide browser elements and application titles */
+    @page {
+        margin: 0;
+        size: A4;
+    }
+
+    /* Hide any browser chrome or application titles */
+    .print-content::before,
+    .print-content::after {
+        content: none !important;
+        display: none !important;
+    }
+
+    /* Hide any page titles or browser elements */
+    title,
+    .page-title,
+    .app-title {
+        display: none !important;
+    }
+
+    /* Hide Financial Summary section when printing */
+    .financial-summary {
+        display: none !important;
+    }
+
+    /* Hide the main page header when printing */
+    .page-header {
+        display: none !important;
+    }
+
+    /* Only show the ledger section */
+    .ledger-section {
+        visibility: visible !important;
+        display: block !important;
+    }
+
+    .print-content table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 0 !important;
+    }
+
+    .print-content th,
+    .print-content td {
+        border: 1px solid #000 !important;
+        padding: 8px !important;
+        text-align: left !important;
+        font-size: 12px !important;
+    }
+
+    .print-content th {
+        background-color: #f3f4f6 !important;
+        font-weight: bold !important;
+        text-align: center !important;
+    }
+
+    .print-content .card {
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .print-content .card-header {
+        border-bottom: 2px solid #000 !important;
+        padding-bottom: 10px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .print-content .card-title {
+        font-size: 24px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+    }
+
+    /* Invoice Design for Print */
+    .print-content::before {
+        content: '';
+        display: none;
+    }
+
+    .print-content::after {
+        content: '';
+        display: none;
+    }
+
+    /* Simple header for print */
+    .print-content .simple-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        border-bottom: 2px solid #000;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .print-content .simple-header .ledger-title {
+        font-size: 24px;
+        font-weight: bold;
+        color: #000;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .print-content .simple-header .date-range {
+        font-size: 16px;
+        font-weight: bold;
+        color: #000;
+        text-align: center;
+    }
+
+    .print-content .simple-header .currency-info {
+        font-size: 14px;
+        color: #666;
+        text-align: center;
+        margin-top: 5px;
+    }
+
+    .print-content .simple-header .complete-history {
+        font-size: 14px;
+        font-style: italic;
+        color: #666;
+    }
+
+    /* Table header repeat on every page */
+    .print-content thead {
+        display: table-header-group;
+    }
+
+    .print-content tbody {
+        display: table-row-group;
+    }
+}
