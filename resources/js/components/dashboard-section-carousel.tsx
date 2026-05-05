@@ -125,71 +125,98 @@ export function DashboardSectionCarousel({
 
     return (
         <div className="space-y-2">
-            <h2 id={`${baseId}-title`} className="sr-only">
-                {labels[active]}
-            </h2>
+            {/* Mobile/tablet: stacked panels, no fixed-height carousel */}
+            <div className="lg:hidden">
+                <div className="w-full max-w-none space-y-10 rounded-2xl border border-border/60 bg-muted/15 px-3 py-4 shadow-sm sm:px-5 sm:py-5">
+                    <section className="space-y-4">
+                        <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+                            {labels[0]}
+                        </p>
+                        {cardsPanel}
+                    </section>
+                    <section className="space-y-4">
+                        <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+                            {labels[1]}
+                        </p>
+                        {payablesPanel}
+                    </section>
+                    <section className="space-y-4">
+                        <p className="text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
+                            {labels[2]}
+                        </p>
+                        {trendsPanel}
+                    </section>
+                </div>
+            </div>
 
-            <div
-                ref={viewportRef}
-                className={cn(
-                    'relative overflow-hidden rounded-2xl border border-border/60 bg-muted/15 shadow-sm',
-                    VIEWPORT_H,
-                )}
-                role="region"
-                aria-roledescription="carousel"
-                aria-label={t.carousel.region_label}
-                aria-labelledby={`${baseId}-title`}
-            >
-                <nav
-                    className="pointer-events-none absolute top-1/2 right-3 z-10 flex -translate-y-1/2 flex-col items-center gap-2.5 md:right-4"
-                    aria-label={t.carousel.region_label}
-                >
-                    {labels.map((label, i) => (
-                        <button
-                            key={label}
-                            type="button"
-                            aria-label={label}
-                            aria-current={i === active ? true : undefined}
-                            className={cn(
-                                'pointer-events-auto rounded-full border-2 border-transparent transition-[transform,background-color,border-color] motion-reduce:transition-none',
-                                i === active
-                                    ? 'size-3 scale-110 border-primary/35 bg-primary shadow-sm'
-                                    : 'size-2 bg-muted-foreground/35 hover:bg-muted-foreground/55',
-                            )}
-                            onClick={() => setActive(i)}
-                        />
-                    ))}
-                </nav>
+            {/* Desktop: keep existing carousel behavior unchanged */}
+            <div className="hidden lg:block">
+                <h2 id={`${baseId}-title`} className="sr-only">
+                    {labels[active]}
+                </h2>
 
                 <div
+                    ref={viewportRef}
                     className={cn(
-                        'flex w-full flex-col motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out',
-                        'motion-reduce:transition-none',
+                        'relative overflow-hidden rounded-2xl border border-border/60 bg-muted/15 shadow-sm',
+                        VIEWPORT_H,
                     )}
-                    style={{
-                        transform: `translateY(calc(-${active} * 100% / ${SLIDE_COUNT}))`,
-                    }}
+                    role="region"
+                    aria-roledescription="carousel"
+                    aria-label={t.carousel.region_label}
+                    aria-labelledby={`${baseId}-title`}
                 >
-                    {panels.map((panel, i) => (
-                        <div
-                            key={labels[i]}
-                            id={`${baseId}-panel-${i}`}
-                            ref={(el) => {
-                                panelRefs.current[i] = el;
-                            }}
-                            role="group"
-                            aria-label={labels[i]}
-                            aria-hidden={i !== active}
-                            tabIndex={active === i ? 0 : -1}
-                            className={cn(
-                                'flex min-h-0 w-full shrink-0 flex-col overflow-y-auto overflow-x-hidden',
-                                VIEWPORT_H,
-                                'px-3 py-4 pr-10 sm:px-5 sm:py-5 sm:pr-11 md:px-6 md:pr-12',
-                            )}
-                        >
-                            {panel}
-                        </div>
-                    ))}
+                    <nav
+                        className="pointer-events-none absolute top-1/2 right-3 z-10 flex -translate-y-1/2 flex-col items-center gap-2.5 md:right-4"
+                        aria-label={t.carousel.region_label}
+                    >
+                        {labels.map((label, i) => (
+                            <button
+                                key={label}
+                                type="button"
+                                aria-label={label}
+                                aria-current={i === active ? true : undefined}
+                                className={cn(
+                                    'pointer-events-auto rounded-full border-2 border-transparent transition-[transform,background-color,border-color] motion-reduce:transition-none',
+                                    i === active
+                                        ? 'size-3 scale-110 border-primary/35 bg-primary shadow-sm'
+                                        : 'size-2 bg-muted-foreground/35 hover:bg-muted-foreground/55',
+                                )}
+                                onClick={() => setActive(i)}
+                            />
+                        ))}
+                    </nav>
+
+                    <div
+                        className={cn(
+                            'flex w-full flex-col motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out',
+                            'motion-reduce:transition-none',
+                        )}
+                        style={{
+                            transform: `translateY(calc(-${active} * 100% / ${SLIDE_COUNT}))`,
+                        }}
+                    >
+                        {panels.map((panel, i) => (
+                            <div
+                                key={labels[i]}
+                                id={`${baseId}-panel-${i}`}
+                                ref={(el) => {
+                                    panelRefs.current[i] = el;
+                                }}
+                                role="group"
+                                aria-label={labels[i]}
+                                aria-hidden={i !== active}
+                                tabIndex={active === i ? 0 : -1}
+                                className={cn(
+                                    'flex min-h-0 w-full shrink-0 flex-col overflow-y-auto overflow-x-hidden',
+                                    VIEWPORT_H,
+                                    'px-3 py-4 pr-10 sm:px-5 sm:py-5 sm:pr-11 md:px-6 md:pr-12',
+                                )}
+                            >
+                                {panel}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
