@@ -21,11 +21,6 @@ export default defineConfig({
         chunkSizeWarningLimit: 1200,
         rollupOptions: {
             output: {
-                // Stable filenames (no content hashes).
-                // Note: this can cause aggressive browser caching in production unless you manage cache headers.
-                entryFileNames: 'assets/[name].js',
-                chunkFileNames: 'assets/[name].js',
-                assetFileNames: 'assets/[name][extname]',
                 manualChunks(id) {
                     if (id.includes('node_modules/@inertiajs/')) {
                         return 'vendor-inertia';
