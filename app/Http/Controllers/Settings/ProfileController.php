@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -46,7 +47,23 @@ class ProfileController extends Controller
 
         if ($request->hasFile('avatar')) {
             $this->deleteStoredAvatar($user);
-            $user->avatar_path = $request->file('avatar')->store('avatars', 'public');
+
+            $file = $request->file('avatar');
+            $originalName = $file->getClientOriginalName();
+            $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+            $extension = $file->getClientOriginalExtension();
+
+            $safeBaseName = Str::slug($baseName);
+            if ($safeBaseName === '') {
+                $safeBaseName = 'avatar';
+            }
+
+            $safeExtension = strtolower($extension);
+            $finalName = $safeExtension !== ''
+                ? "{$safeBaseName}.{$safeExtension}"
+                : $safeBaseName;
+
+            $user->avatar_path = $file->storeAs("avatars/{$user->id}", $finalName, 'public');
         }
 
         $data = Arr::except($data, ['avatar', 'remove_avatar']);

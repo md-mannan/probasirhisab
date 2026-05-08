@@ -72,6 +72,7 @@ export default defineConfig({
         tailwindcss(),
         wayfinder({
             formVariants: true,
+            command: 'php artisan wayfinder:generate-safe',
         }),
     ],
 });

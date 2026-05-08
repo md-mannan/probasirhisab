@@ -107,6 +107,7 @@ test('profile photo can be uploaded', function () {
     $path = $user->fresh()->avatar_path;
 
     expect($path)->not->toBeNull();
+    expect($path)->toBe("avatars/{$user->id}/avatar.jpg");
     Storage::disk('public')->assertExists($path);
 });
 
