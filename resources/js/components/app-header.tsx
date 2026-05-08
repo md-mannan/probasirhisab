@@ -195,7 +195,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         </NavigationMenu>
                     </div>
 
-                    <div className="ml-auto flex items-center space-x-2">
+                    <div className="ml-auto flex items-center space-x-2 -mr-2 lg:mr-0">
                         <div className="relative flex items-center space-x-1">
                             <Button
                                 variant="ghost"

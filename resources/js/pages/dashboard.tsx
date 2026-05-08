@@ -37,6 +37,7 @@ import type { ComponentType } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { CountUpText } from '@/components/count-up-text';
+import { ClientOnly } from '@/components/client-only';
 import { DashboardSectionCarousel } from '@/components/dashboard-section-carousel';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
@@ -1255,15 +1256,8 @@ export default function Dashboard({
                                 <p className="text-xs text-muted-foreground">
                                     {t.reorder_hint}
                                 </p>
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEnd}
-                                >
-                                    <SortableContext
-                                        items={tileOrder}
-                                        strategy={rectSortingStrategy}
-                                    >
+                                <ClientOnly
+                                    fallback={
                                         <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
                                             {orderedTiles.map((tile) => (
                                                 <SortableMetricTile
@@ -1285,8 +1279,41 @@ export default function Dashboard({
                                                 />
                                             ))}
                                         </div>
-                                    </SortableContext>
-                                </DndContext>
+                                    }
+                                >
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <SortableContext
+                                            items={tileOrder}
+                                            strategy={rectSortingStrategy}
+                                        >
+                                            <div className="grid grid-cols-1 items-start gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+                                                {orderedTiles.map((tile) => (
+                                                    <SortableMetricTile
+                                                        key={tile.id}
+                                                        tile={tile}
+                                                        t={t}
+                                                        primaryCurrency={
+                                                            primaryCurrency
+                                                        }
+                                                        secondaryCurrency={
+                                                            secondaryCurrency
+                                                        }
+                                                        primaryDecimals={
+                                                            primaryDecimals
+                                                        }
+                                                        secondaryDecimals={
+                                                            secondaryDecimals
+                                                        }
+                                                    />
+                                                ))}
+                                            </div>
+                                        </SortableContext>
+                                    </DndContext>
+                                </ClientOnly>
                             </section>
                         }
                         payablesPanel={
