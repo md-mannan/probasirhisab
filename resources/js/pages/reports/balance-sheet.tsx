@@ -252,7 +252,7 @@ export default function BalanceSheet({
                 <Head title="Balance Sheet" />
 
                 <div className="w-full min-w-0 space-y-6 pb-8">
-                    <div className="border-b border-border/60 bg-background px-4 py-4 md:px-6 lg:px-8">
+                    <div className="border-b border-border/60 bg-background px-2 py-4 sm:px-4 md:px-6 lg:px-8">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <Heading
                                 className="mb-0 max-w-3xl space-y-1"
@@ -269,7 +269,7 @@ export default function BalanceSheet({
                         </div>
                     </div>
 
-                    <div className="space-y-6 px-4 md:px-6 lg:px-8">
+                    <div className="space-y-6 px-2 sm:px-4 md:px-6 lg:px-8">
                         <div className="grid gap-4 lg:grid-cols-12">
                             {/* Summary */}
                             <div className="lg:col-span-6">

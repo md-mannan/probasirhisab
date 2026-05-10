@@ -11,6 +11,7 @@ use App\Services\ExchangeRateService;
 use App\Services\TransactionLedgerSync;
 use App\Support\Currency;
 use App\Support\PrimaryCashBalance;
+use App\Support\SharedCatalog;
 use App\Support\TransactionListSortOrder;
 use App\Support\TransactionType;
 use Illuminate\Http\RedirectResponse;
@@ -80,7 +81,7 @@ class TransactionController extends Controller
         $secondaryCurrency = $user->secondary_currency ?: 'BDT';
 
         $contacts = Contact::query()
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->orderBy('name', 'asc')
             ->get(['id', 'name']);
 
@@ -123,7 +124,7 @@ class TransactionController extends Controller
                 ? 'settle_payable'
                 : 'settle_receivable';
             $settlementCategories = Category::query()
-                ->where('user_id', $user->id)
+                ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
                 ->where('type', $settlementCategoryType)
                 ->orderBy('name', 'asc')
                 ->get(['id', 'name', 'type'])
@@ -143,7 +144,7 @@ class TransactionController extends Controller
         }
 
         $categoriesByType = Category::query()
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->orderBy('type', 'asc')
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'type'])
@@ -196,7 +197,7 @@ class TransactionController extends Controller
         $secondaryDecimals = Currency::decimalsFor($secondaryCurrency);
 
         $contacts = Contact::query()
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->orderBy('name', 'asc')
             ->get(['id', 'name']);
 
@@ -336,7 +337,7 @@ class TransactionController extends Controller
         })->values();
 
         $categories = Category::query()
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->orderBy('type', 'asc')
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'type'])
@@ -411,7 +412,7 @@ class TransactionController extends Controller
 
         $category = Category::query()
             ->where('id', $data['category_id'])
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->where('type', $data['type'])
             ->first();
 
@@ -430,7 +431,7 @@ class TransactionController extends Controller
 
         if (count($contactIds) > 0) {
             $owned = Contact::query()
-                ->where('user_id', $user->id)
+                ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
                 ->whereIn('id', $contactIds, 'and', false)
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id)
@@ -554,7 +555,7 @@ class TransactionController extends Controller
 
         $category = Category::query()
             ->where('id', $data['category_id'])
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->where('type', $data['type'])
             ->first();
 
@@ -573,7 +574,7 @@ class TransactionController extends Controller
 
         if (count($contactIds) > 0) {
             $owned = Contact::query()
-                ->where('user_id', $user->id)
+                ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
                 ->whereIn('id', $contactIds, 'and', false)
                 ->pluck('id')
                 ->map(fn ($id) => (int) $id)

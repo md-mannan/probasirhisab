@@ -62,15 +62,19 @@ export default function CategoriesIndex({ types, categories }: Props) {
         <>
             <Head title="Categories" />
 
-            <div className="space-y-6 p-4">
-                <div className="mb-0 flex items-start justify-between gap-4">
-                    <Heading
-                        title="Categories"
-                        description="Create and manage your categories"
-                    />
+            <div className="min-w-0 space-y-6 py-4 pb-6 sm:py-6">
+                <div className="mb-0 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                        <Heading
+                            title="Categories"
+                            description="Create and manage your categories"
+                        />
+                    </div>
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                         <DialogTrigger asChild>
-                            <Button>Create category</Button>
+                            <Button className="w-full shrink-0 sm:w-auto">
+                                Create category
+                            </Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>

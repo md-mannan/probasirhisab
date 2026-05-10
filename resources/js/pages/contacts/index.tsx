@@ -68,17 +68,19 @@ export default function ContactsIndex({
         <>
             <Head title="People" />
 
-            <div className="space-y-6 p-4">
-                <div className="mb-0 flex items-start justify-between gap-4">
-                    <Heading
-                        title="People"
-                        description="Income by person + payable/receivable outstanding (expenses are handled globally)"
-                    />
+            <div className="min-w-0 space-y-6 py-4 pb-6 sm:py-6">
+                <div className="mb-0 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                        <Heading
+                            title="People"
+                            description="Income by person + payable/receivable outstanding (expenses are handled globally)"
+                        />
+                    </div>
 
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                         <DialogTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 size-4" />
+                            <Button className="w-full shrink-0 sm:w-auto">
+                                <Plus className="mr-2 size-4 shrink-0" />
                                 Add person
                             </Button>
                         </DialogTrigger>

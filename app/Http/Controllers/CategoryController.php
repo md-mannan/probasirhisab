@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Support\CategoryType;
+use App\Support\SharedCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,7 +18,7 @@ class CategoryController extends Controller
         $user = $request->user();
 
         $categories = Category::query()
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->orderBy('type', 'asc')
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'type', 'created_at']);
@@ -63,7 +64,11 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category): RedirectResponse
     {
-        if ($category->user_id !== $request->user()->id) {
+        if (! SharedCatalog::canAccessCategory($request->user(), $category)) {
+            abort(403);
+        }
+
+        if (! SharedCatalog::canMutateCategory($request->user(), $category)) {
             abort(403);
         }
 
@@ -80,7 +85,7 @@ class CategoryController extends Controller
                     ->ignore($category->id)
                     ->where(
                         fn ($q) => $q
-                            ->where('user_id', $request->user()->id)
+                            ->where('user_id', $category->user_id)
                             ->where('type', (string) $request->input('type')),
                     ),
             ],
@@ -101,7 +106,11 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, Category $category): RedirectResponse
     {
-        if ($category->user_id !== $request->user()->id) {
+        if (! SharedCatalog::canAccessCategory($request->user(), $category)) {
+            abort(403);
+        }
+
+        if (! SharedCatalog::canMutateCategory($request->user(), $category)) {
             abort(403);
         }
 

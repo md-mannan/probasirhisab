@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Models\TransactionSettlement;
 use App\Services\TransactionLedgerSync;
 use App\Support\PrimaryCashBalance;
+use App\Support\SharedCatalog;
 use App\Support\TransactionListSortOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class TransactionSettlementController extends Controller
         $expectedCategoryType = $this->settlementCategoryTypeFor($transaction);
         $category = Category::query()
             ->where('id', $data['category_id'])
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->where('type', $expectedCategoryType)
             ->first();
         if (! $category) {
@@ -121,7 +122,7 @@ class TransactionSettlementController extends Controller
         $expectedCategoryType = $this->settlementCategoryTypeFor($transaction);
         $category = Category::query()
             ->where('id', $data['category_id'])
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->where('type', $expectedCategoryType)
             ->first();
         if (! $category) {

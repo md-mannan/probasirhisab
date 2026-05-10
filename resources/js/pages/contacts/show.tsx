@@ -79,15 +79,21 @@ return null;
         <>
             <Head title={contact.name} />
 
-            <div className="space-y-6 p-4">
-                <div className="flex items-start justify-between gap-4">
-                    <Heading
-                        title={contact.name}
-                        description="Income + payable/receivable (expenses are not shown here)"
-                    />
-                    <Button variant="outline" asChild>
+            <div className="min-w-0 space-y-6 py-4 pb-6 sm:py-6">
+                <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                        <Heading
+                            title={contact.name}
+                            description="Income + payable/receivable (expenses are not shown here)"
+                        />
+                    </div>
+                    <Button
+                        variant="outline"
+                        className="w-full shrink-0 sm:w-auto"
+                        asChild
+                    >
                         <Link href={contactsIndex()}>
-                            <ArrowLeft className="mr-2 size-4" />
+                            <ArrowLeft className="mr-2 size-4 shrink-0" />
                             Back
                         </Link>
                     </Button>

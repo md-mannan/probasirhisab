@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Contact;
 use App\Models\Transaction;
 use App\Support\Currency;
+use App\Support\SharedCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +22,7 @@ class ContactController extends Controller
         $secondaryCurrency = $user->secondary_currency ?: 'BDT';
 
         $contacts = Contact::query()
-            ->where('user_id', $user->id)
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'created_at']);
 
@@ -96,7 +97,7 @@ class ContactController extends Controller
 
     public function show(Request $request, Contact $contact): Response
     {
-        if ($contact->user_id !== $request->user()->id) {
+        if (! SharedCatalog::canAccessContact($request->user(), $contact)) {
             abort(403);
         }
 
@@ -165,7 +166,11 @@ class ContactController extends Controller
 
     public function update(Request $request, Contact $contact): RedirectResponse
     {
-        if ($contact->user_id !== $request->user()->id) {
+        if (! SharedCatalog::canAccessContact($request->user(), $contact)) {
+            abort(403);
+        }
+
+        if (! SharedCatalog::canMutateContact($request->user(), $contact)) {
             abort(403);
         }
 
@@ -186,7 +191,11 @@ class ContactController extends Controller
 
     public function destroy(Request $request, Contact $contact): RedirectResponse
     {
-        if ($contact->user_id !== $request->user()->id) {
+        if (! SharedCatalog::canAccessContact($request->user(), $contact)) {
+            abort(403);
+        }
+
+        if (! SharedCatalog::canMutateContact($request->user(), $contact)) {
             abort(403);
         }
 

@@ -744,7 +744,7 @@ export default function TransactionsIndex({
         <>
             <Head title="Transactions" />
 
-            <div className="space-y-6 p-4">
+            <div className="space-y-6 py-4 pb-6 sm:py-6">
                 <div className="mb-0 flex flex-wrap items-start justify-between gap-4">
                     <Heading
                         title="Transactions"

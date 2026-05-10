@@ -268,7 +268,7 @@ export default function LedgerIndex({
         <>
             <Head title="Ledger" />
 
-            <div className="space-y-6 p-4">
+            <div className="space-y-6 py-4 pb-6 sm:py-6">
                 <Heading
                     title="Ledger"
                     description="Posted entries from your transactions (chronological running balance)"
