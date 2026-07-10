@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\TransactionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -27,6 +29,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class Transaction extends Model
 {
+    /** @use HasFactory<TransactionFactory> */
+    use HasFactory;
+
     /**
      * Casts keep foreign keys as integers. MySQL/PDO can return them as strings; strict
      * `user_id !== auth()->id()` would then fail with 403 on show/update/delete.

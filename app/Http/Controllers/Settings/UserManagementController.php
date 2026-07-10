@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\SharedCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -71,6 +72,8 @@ class UserManagementController extends Controller
             'role' => UserRole::from($validated['role']),
         ]);
 
+        SharedCatalog::flushCache();
+
         return redirect()->route('settings.users.index')->with('status', 'User created.');
     }
 
@@ -98,6 +101,8 @@ class UserManagementController extends Controller
         }
 
         $user->update(['role' => $newRole]);
+
+        SharedCatalog::flushCache();
 
         return redirect()->route('settings.users.index')->with('status', 'Role updated.');
     }
@@ -130,6 +135,8 @@ class UserManagementController extends Controller
         $this->authorize('delete', $user);
 
         $user->delete();
+
+        SharedCatalog::flushCache();
 
         return redirect()->route('settings.users.index')->with('status', 'User removed.');
     }

@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph Browser
+        UI[React 19 + Inertia + TS<br/>Tailwind 4 · Radix · Chart.js · dnd-kit]
+    end
+
+    subgraph Laravel["Laravel 13 (app/)"]
+        MW[Middleware pipeline<br/>SetLocale · HandleInertiaRequests · RedirectToInstaller]
+        Ctrl[Controllers]
+        Svc[Services<br/>TransactionLedgerSync · ExchangeRateService<br/>DatabaseBackupService · EnvFileWriter]
+        Models[Eloquent Models]
+        Auth[Fortify<br/>login · 2FA · email verify]
+    end
+
+    DB[(Relational DB<br/>MySQL / SQLite)]
+    FX([External FX API<br/>open.er-api / exchangerate-api])
+
+    UI <-->|Inertia XHR / full-page| MW
+    MW --> Ctrl
+    Ctrl --> Svc
+    Ctrl --> Auth
+    Svc --> Models
+    Ctrl --> Models
+    Models <--> DB
+    Svc -->|cached 15 min| FX

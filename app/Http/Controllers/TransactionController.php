@@ -2,22 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Transactions\TransactionWriter;
+use App\Http\Requests\StoreTransactionRequest;
+use App\Http\Requests\UpdateTransactionRequest;
 use App\Models\Category;
 use App\Models\Contact;
 use App\Models\ExchangeRateSetting;
 use App\Models\Transaction;
 use App\Models\TransactionSettlement;
 use App\Services\ExchangeRateService;
-use App\Services\TransactionLedgerSync;
 use App\Support\Currency;
 use App\Support\PrimaryCashBalance;
 use App\Support\SharedCatalog;
-use App\Support\TransactionListSortOrder;
 use App\Support\TransactionType;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -364,281 +364,21 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreTransactionRequest $request, TransactionWriter $writer): RedirectResponse
     {
-        $user = $request->user();
-
-        $data = $request->validate([
-            'type' => ['required', 'string', Rule::in(TransactionType::values())],
-            'category_id' => ['required', 'integer'],
-            'contact_id' => ['nullable', 'integer'], // legacy single person
-            'contact_ids' => ['nullable', 'array', 'max:10'],
-            'contact_ids.*' => ['integer', 'distinct'],
-            'primary_amount' => ['nullable', 'numeric'],
-            'secondary_amount' => ['nullable', 'numeric'],
-            'settled_amount' => ['nullable', 'numeric', 'min:0'],
-            'rate' => ['nullable', 'numeric'],
-            'occurred_on' => ['required', 'date'],
-            'note' => ['nullable', 'string', 'max:5000'],
-            'source' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $primaryCurrency = $user->primary_currency ?: 'KWD';
-        $secondaryCurrency = $user->secondary_currency ?: 'BDT';
-
-        $primaryAmount = array_key_exists('primary_amount', $data) ? $data['primary_amount'] : null;
-        $secondaryAmount = array_key_exists('secondary_amount', $data) ? $data['secondary_amount'] : null;
-        $settledAmount = array_key_exists('settled_amount', $data) ? $data['settled_amount'] : null;
-        $rate = array_key_exists('rate', $data) ? $data['rate'] : null;
-
-        if ($primaryAmount === null && $secondaryAmount === null) {
-            return back()->withErrors([
-                'primary_amount' => 'Enter an amount.',
-                'secondary_amount' => 'Enter an amount.',
-            ]);
-        }
-
-        if ($rate !== null && (float) $rate <= 0) {
-            return back()->withErrors(['rate' => 'Rate must be greater than 0.']);
-        }
-
-        if ($rate !== null) {
-            if ($primaryAmount !== null && $secondaryAmount === null) {
-                $secondaryAmount = (float) $primaryAmount * (float) $rate;
-            } elseif ($secondaryAmount !== null && $primaryAmount === null) {
-                $primaryAmount = (float) $secondaryAmount / (float) $rate;
-            }
-        }
-
-        $category = Category::query()
-            ->where('id', $data['category_id'])
-            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
-            ->where('type', $data['type'])
-            ->first();
-
-        if (! $category) {
-            return back()->withErrors([
-                'category_id' => 'Please select a valid category.',
-            ]);
-        }
-
-        $contactIds = [];
-        if (! empty($data['contact_ids']) && is_array($data['contact_ids'])) {
-            $contactIds = array_values(array_map('intval', $data['contact_ids']));
-        } elseif (array_key_exists('contact_id', $data) && $data['contact_id'] !== null) {
-            $contactIds = [(int) $data['contact_id']];
-        }
-
-        if (count($contactIds) > 0) {
-            $owned = Contact::query()
-                ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
-                ->whereIn('id', $contactIds, 'and', false)
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-
-            sort($owned);
-            $unique = array_values(array_unique($contactIds));
-            sort($unique);
-            if ($owned !== $unique) {
-                return back()->withErrors([
-                    'contact_ids' => 'Please select valid person(s).',
-                ]);
-            }
-        }
-
-        if (in_array($data['type'], ['payable', 'receivable'], true)) {
-            $total = abs((float) ($primaryAmount ?? 0));
-            $settled = (float) ($settledAmount ?? 0);
-            if ($settled > $total + 0.0000001) {
-                return back()->withErrors([
-                    'settled_amount' => 'Settled amount cannot be greater than total amount.',
-                ]);
-            }
-        } else {
-            $settledAmount = null;
-        }
-
-        if (in_array($data['type'], ['expense', 'receivable'], true)) {
-            $need = abs((float) ($primaryAmount ?? 0));
-            $balance = PrimaryCashBalance::forUserId($user->id);
-            if ($balance + 0.0000001 < $need) {
-                return back()->withErrors([
-                    'primary_amount' => __('You do not have enough cash for this transaction.'),
-                ]);
-            }
-        }
-
-        $transaction = Transaction::query()->create([
-            'user_id' => $user->id,
-            'type' => $data['type'],
-            'category_id' => $category->id,
-            'contact_id' => null, // legacy field; kept nullable
-            'amount' => $primaryAmount,
-            'secondary_amount' => $secondaryAmount,
-            'settled_amount' => $settledAmount,
-            'currency' => $primaryCurrency,
-            'secondary_currency' => $secondaryCurrency,
-            'rate' => $rate,
-            'occurred_on' => $data['occurred_on'],
-            'sort_order' => null,
-            'note' => $data['note'] ? trim($data['note']) : null,
-            'source' => $data['source'] ? trim($data['source']) : null,
-        ]);
-
-        $transaction->sort_order = TransactionListSortOrder::nextForUser($user->id);
-        $transaction->save();
-
-        if (count($contactIds) > 0) {
-            $transaction->contacts()->syncWithPivotValues(
-                $contactIds,
-                ['user_id' => $user->id],
-            );
-        }
-
-        app(TransactionLedgerSync::class)->syncForTransaction($transaction);
+        $writer->create($request->user(), $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Transaction created.')]);
 
         return back();
     }
 
-    public function update(Request $request, Transaction $transaction): RedirectResponse
-    {
-        $user = $request->user();
-
-        if ($transaction->user_id !== $user->id) {
-            abort(403);
-        }
-
-        $data = $request->validate([
-            'type' => ['required', 'string', Rule::in(TransactionType::values())],
-            'category_id' => ['required', 'integer'],
-            'contact_id' => ['nullable', 'integer'], // legacy single person
-            'contact_ids' => ['nullable', 'array', 'max:10'],
-            'contact_ids.*' => ['integer', 'distinct'],
-            'primary_amount' => ['nullable', 'numeric'],
-            'secondary_amount' => ['nullable', 'numeric'],
-            'settled_amount' => ['nullable', 'numeric', 'min:0'],
-            'rate' => ['nullable', 'numeric'],
-            'occurred_on' => ['required', 'date'],
-            'note' => ['nullable', 'string', 'max:5000'],
-            'source' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $primaryCurrency = $user->primary_currency ?: 'KWD';
-        $secondaryCurrency = $user->secondary_currency ?: 'BDT';
-
-        $primaryAmount = array_key_exists('primary_amount', $data) ? $data['primary_amount'] : null;
-        $secondaryAmount = array_key_exists('secondary_amount', $data) ? $data['secondary_amount'] : null;
-        $settledAmount = array_key_exists('settled_amount', $data) ? $data['settled_amount'] : null;
-        $rate = array_key_exists('rate', $data) ? $data['rate'] : null;
-
-        if ($primaryAmount === null && $secondaryAmount === null) {
-            return back()->withErrors([
-                'primary_amount' => 'Enter an amount.',
-                'secondary_amount' => 'Enter an amount.',
-            ]);
-        }
-
-        if ($rate !== null && (float) $rate <= 0) {
-            return back()->withErrors(['rate' => 'Rate must be greater than 0.']);
-        }
-
-        if ($rate !== null) {
-            if ($primaryAmount !== null && $secondaryAmount === null) {
-                $secondaryAmount = (float) $primaryAmount * (float) $rate;
-            } elseif ($secondaryAmount !== null && $primaryAmount === null) {
-                $primaryAmount = (float) $secondaryAmount / (float) $rate;
-            }
-        }
-
-        $category = Category::query()
-            ->where('id', $data['category_id'])
-            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
-            ->where('type', $data['type'])
-            ->first();
-
-        if (! $category) {
-            return back()->withErrors([
-                'category_id' => 'Please select a valid category.',
-            ]);
-        }
-
-        $contactIds = [];
-        if (! empty($data['contact_ids']) && is_array($data['contact_ids'])) {
-            $contactIds = array_values(array_map('intval', $data['contact_ids']));
-        } elseif (array_key_exists('contact_id', $data) && $data['contact_id'] !== null) {
-            $contactIds = [(int) $data['contact_id']];
-        }
-
-        if (count($contactIds) > 0) {
-            $owned = Contact::query()
-                ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
-                ->whereIn('id', $contactIds, 'and', false)
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-
-            sort($owned);
-            $unique = array_values(array_unique($contactIds));
-            sort($unique);
-            if ($owned !== $unique) {
-                return back()->withErrors([
-                    'contact_ids' => 'Please select valid person(s).',
-                ]);
-            }
-        }
-
-        if (in_array($data['type'], ['payable', 'receivable'], true)) {
-            $total = abs((float) ($primaryAmount ?? 0));
-            $settled = (float) ($settledAmount ?? 0);
-            if ($settled > $total + 0.0000001) {
-                return back()->withErrors([
-                    'settled_amount' => 'Settled amount cannot be greater than total amount.',
-                ]);
-            }
-        } else {
-            $settledAmount = null;
-        }
-
-        if (in_array($data['type'], ['expense', 'receivable'], true)) {
-            $need = abs((float) ($primaryAmount ?? 0));
-            $balance = PrimaryCashBalance::forUserId($user->id);
-            $oldOut = in_array($transaction->type, ['expense', 'receivable'], true)
-                ? abs((float) $transaction->amount)
-                : 0.0;
-            $available = $balance + $oldOut;
-            if ($available + 0.0000001 < $need) {
-                return back()->withErrors([
-                    'primary_amount' => __('You do not have enough cash for this transaction.'),
-                ]);
-            }
-        }
-
-        $transaction->fill([
-            'type' => $data['type'],
-            'category_id' => $category->id,
-            'contact_id' => null,
-            'amount' => $primaryAmount,
-            'secondary_amount' => $secondaryAmount,
-            'settled_amount' => $settledAmount,
-            'currency' => $primaryCurrency,
-            'secondary_currency' => $secondaryCurrency,
-            'rate' => $rate,
-            'occurred_on' => $data['occurred_on'],
-            'note' => $data['note'] ? trim($data['note']) : null,
-            'source' => $data['source'] ? trim($data['source']) : null,
-        ]);
-
-        $transaction->saveOrFail();
-
-        $transaction->contacts()->syncWithPivotValues(
-            $contactIds,
-            ['user_id' => $user->id],
-        );
-
-        app(TransactionLedgerSync::class)->syncForTransaction($transaction);
+    public function update(
+        UpdateTransactionRequest $request,
+        Transaction $transaction,
+        TransactionWriter $writer,
+    ): RedirectResponse {
+        $writer->update($request->user(), $transaction, $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Transaction updated.')]);
 

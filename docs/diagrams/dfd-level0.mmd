@@ -1,0 +1,12 @@
+flowchart LR
+    User([User / Browser])
+    FX([External Exchange-Rate API])
+    FS([Host filesystem / cPanel])
+
+    System{{Probasirhisab System<br/>Laravel + Inertia + React}}
+
+    User -->|credentials, transactions,<br/>settlements, settings| System
+    System -->|page props, charts,<br/>reports, toasts, exports| User
+    System -->|currency pair request| FX
+    FX -->|rate JSON| System
+    System -->|.env, migrations, logo,<br/>install lock| FS

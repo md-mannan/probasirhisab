@@ -1,0 +1,77 @@
+erDiagram
+    USERS ||--o{ CATEGORIES : owns
+    USERS ||--o{ CONTACTS : owns
+    USERS ||--o{ TRANSACTIONS : owns
+    USERS ||--o{ TRANSACTION_SETTLEMENTS : owns
+    USERS ||--o{ LEDGER_ENTRIES : owns
+
+    CATEGORIES ||--o{ TRANSACTIONS : "categorizes (nullOnDelete)"
+    CATEGORIES ||--o{ TRANSACTION_SETTLEMENTS : "categorizes (nullOnDelete)"
+
+    CONTACTS ||--o{ TRANSACTIONS : "legacy contact_id (nullOnDelete)"
+    CONTACTS ||--o{ CONTACT_TRANSACTION : links
+    TRANSACTIONS ||--o{ CONTACT_TRANSACTION : links
+
+    TRANSACTIONS ||--o{ TRANSACTION_SETTLEMENTS : "settled by (cascade)"
+    TRANSACTIONS ||--o| LEDGER_ENTRIES : "base line (cascade)"
+    TRANSACTION_SETTLEMENTS ||--o{ LEDGER_ENTRIES : "settlement line (cascade)"
+
+    USERS {
+        bigint id PK
+        string email UK
+        string role "super_admin|admin|user"
+        string primary_currency
+        string secondary_currency
+        json dashboard_tile_order
+    }
+    CATEGORIES {
+        bigint id PK
+        bigint user_id FK
+        string name
+        string type
+    }
+    CONTACTS {
+        bigint id PK
+        bigint user_id FK
+        string name
+    }
+    TRANSACTIONS {
+        bigint id PK
+        bigint user_id FK
+        bigint category_id FK
+        string type
+        decimal amount
+        decimal secondary_amount
+        decimal settled_amount
+        decimal rate
+        date occurred_on
+        int sort_order
+    }
+    TRANSACTION_SETTLEMENTS {
+        bigint id PK
+        bigint transaction_id FK
+        bigint user_id FK
+        bigint category_id FK
+        decimal amount
+        date paid_on
+    }
+    LEDGER_ENTRIES {
+        bigint id PK
+        bigint user_id FK
+        bigint transaction_id FK
+        bigint settlement_id FK
+        decimal debit_primary
+        decimal credit_primary
+        decimal debit_secondary
+        decimal credit_secondary
+    }
+    CONTACT_TRANSACTION {
+        bigint id PK
+        bigint contact_id FK
+        bigint transaction_id FK
+    }
+    EXCHANGE_RATE_SETTINGS {
+        bigint id PK
+        string exchange_rate_api_url
+        string exchange_rate_api_key
+    }

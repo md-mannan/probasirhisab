@@ -1,0 +1,21 @@
+sequenceDiagram
+    actor U as User
+    participant R as React (transactions/show)
+    participant C as TransactionSettlementController
+    participant DB as Database
+    participant S as TransactionLedgerSync
+
+    U->>R: Enter payment (amount, date, category, source)
+    R->>C: POST /transactions/{t}/settlements
+    C->>C: authorize owner + type is payable/receivable
+    C->>C: validate; resolve settle_* category
+    C->>C: check add + settled <= total
+    alt payable (cash out)
+        C->>DB: PrimaryCashBalance (enough cash?)
+    end
+    C->>DB: create TransactionSettlement
+    C->>DB: recompute transaction.settled_amount
+    C->>S: syncForTransaction(fresh)
+    S->>DB: upsert base + settlement ledger_entries; prune removed
+    C-->>R: flash toast + Inertia back()
+    R-->>U: Updated list + running balance
