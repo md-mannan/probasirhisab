@@ -43,6 +43,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { formatFixed } from '@/lib/money';
 import {
     buildTransactionsExportTable,
     downloadTransactionsExcel,
@@ -355,14 +356,6 @@ export default function TransactionsIndex({
         }
 
         return `${m[3]}/${m[2]}/${m[1]}`;
-    };
-
-    const formatFixed = (value: number, decimals: number) => {
-        if (!Number.isFinite(value)) {
-            return '';
-        }
-
-        return value.toFixed(decimals);
     };
 
     const directionForType = (type: string) => {
