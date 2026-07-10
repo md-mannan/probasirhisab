@@ -45,6 +45,14 @@ import {
 } from '@/components/ui/tooltip';
 import { formatFixed } from '@/lib/money';
 import {
+    directionForType,
+    formatDateDMY,
+    isObligation,
+    settledFor as settledForAmount,
+    statusLabel,
+    totalFor as totalForAmount,
+} from '@/lib/transactions';
+import {
     buildTransactionsExportTable,
     downloadTransactionsExcel,
     downloadTransactionsPdf,
@@ -124,18 +132,6 @@ export default function TransactionsIndex({
     useEffect(() => {
         setOrderedTxs(transactions);
     }, [transactions]);
-
-    const persistOrder = (ids: number[]) => {
-        router.patch(
-            '/transactions/reorder',
-            { ids },
-            {
-                preserveScroll: true,
-                preserveState: false,
-                only: ['transactions'],
-            },
-        );
-    };
 
     const persistRowOrder = (ids: string[]) => {
         router.patch(
@@ -348,31 +344,6 @@ export default function TransactionsIndex({
     const parsedRate = Number(rate);
     const canCalc = Number.isFinite(parsedRate) && parsedRate > 0;
 
-    const formatDateDMY = (iso: string) => {
-        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-
-        if (!m) {
-            return iso;
-        }
-
-        return `${m[3]}/${m[2]}/${m[1]}`;
-    };
-
-    const directionForType = (type: string) => {
-        if (
-            type === 'expense' ||
-            type === 'payable' ||
-            type === 'settle_payable'
-        ) {
-            return -1;
-        }
-
-        return 1; // income + receivable
-    };
-
-    const isObligation = (type: string) =>
-        type === 'payable' || type === 'receivable';
-
     const typeMeta = (type: string) => {
         if (type === 'income') {
             return {
@@ -422,46 +393,12 @@ export default function TransactionsIndex({
         };
     };
 
-    const statusLabel = (
-        status: Props['transactions'][number]['settlement_status'],
-    ) => {
-        if (status === 'unsettled') {
-            return 'Unsettled';
-        }
+    // Row-object adapters over the pure helpers in @/lib/transactions.
+    const settledFor = (t: Props['transactions'][number]) =>
+        settledForAmount(t.settled_amount);
 
-        if (status === 'partial') {
-            return 'Partial';
-        }
-
-        if (status === 'settled') {
-            return 'Settled';
-        }
-
-        return '—';
-    };
-
-    const remainingFor = (t: Props['transactions'][number]) => {
-        const total = Math.abs(Number(t.amount));
-        const settled = Math.max(0, Number(t.settled_amount ?? 0));
-
-        if (!Number.isFinite(total) || !Number.isFinite(settled)) {
-            return null;
-        }
-
-        return Math.max(0, total - settled);
-    };
-
-    const settledFor = (t: Props['transactions'][number]) => {
-        const settled = Math.max(0, Number(t.settled_amount ?? 0));
-
-        return Number.isFinite(settled) ? settled : null;
-    };
-
-    const totalFor = (t: Props['transactions'][number]) => {
-        const total = Math.abs(Number(t.amount));
-
-        return Number.isFinite(total) ? total : null;
-    };
+    const totalFor = (t: Props['transactions'][number]) =>
+        totalForAmount(t.amount);
 
     const progressFor = (t: Props['transactions'][number]) => {
         const total = totalFor(t);
