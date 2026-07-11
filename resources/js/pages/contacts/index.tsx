@@ -131,26 +131,26 @@ export default function ContactsIndex({
                             No people yet. Add your brothers first.
                         </div>
                     ) : (
-                        <div className="overflow-x-auto overflow-y-visible">
+                        <div className="max-h-[calc(100dvh-13rem)] overflow-auto">
                             <table className="w-full min-w-[980px] border-separate border-spacing-0 text-sm">
                                 <thead>
                                     <tr className="border-b border-sidebar-border/70 text-left font-medium">
-                                        <th className="sticky top-16 z-20 w-16 bg-muted px-4 py-3 text-muted-foreground">
+                                        <th className="sticky top-0 z-20 w-16 bg-muted px-4 py-3 text-muted-foreground">
                                             SL
                                         </th>
-                                        <th className="sticky top-16 z-20 bg-muted px-4 py-3 text-muted-foreground">
+                                        <th className="sticky top-0 z-20 bg-muted px-4 py-3 text-muted-foreground">
                                             Name
                                         </th>
-                                        <th className="sticky top-16 z-20 w-44 bg-muted px-4 py-3 text-right text-muted-foreground">
+                                        <th className="sticky top-0 z-20 w-44 bg-muted px-4 py-3 text-right text-muted-foreground">
                                             Income
                                         </th>
-                                        <th className="sticky top-16 z-20 w-52 bg-muted px-4 py-3 text-right text-muted-foreground">
+                                        <th className="sticky top-0 z-20 w-52 bg-muted px-4 py-3 text-right text-muted-foreground">
                                             Outstanding
                                         </th>
-                                        <th className="sticky top-16 z-20 w-44 bg-muted px-4 py-3 text-right text-muted-foreground">
+                                        <th className="sticky top-0 z-20 w-44 bg-muted px-4 py-3 text-right text-muted-foreground">
                                             Net (AR − AP)
                                         </th>
-                                        <th className="sticky top-16 z-20 w-28 bg-muted px-4 py-3 text-right text-muted-foreground">
+                                        <th className="sticky top-0 z-20 w-28 bg-muted px-4 py-3 text-right text-muted-foreground">
                                             Actions
                                         </th>
                                     </tr>
