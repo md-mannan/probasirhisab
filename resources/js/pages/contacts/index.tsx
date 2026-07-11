@@ -1,6 +1,7 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -245,36 +246,48 @@ export default function ContactsIndex({
                                                             <Pencil className="size-4" />
                                                         </Button>
 
-                                                        <Form
-                                                            action={contactsDestroy.url(
-                                                                {
-                                                                    contact:
-                                                                        c.id,
-                                                                },
-                                                            )}
-                                                            method="delete"
-                                                            options={{
-                                                                preserveScroll: true,
-                                                            }}
-                                                            className="inline"
-                                                        >
-                                                            {({
-                                                                processing,
-                                                            }) => (
+                                                        <ConfirmDeleteDialog
+                                                            title="Delete person?"
+                                                            description={
+                                                                <>
+                                                                    “{c.name}”
+                                                                    will be
+                                                                    removed.
+                                                                    Transactions
+                                                                    linked to
+                                                                    this person
+                                                                    keep their
+                                                                    record. This
+                                                                    cannot be
+                                                                    undone.
+                                                                </>
+                                                            }
+                                                            confirmLabel="Delete person"
+                                                            onConfirm={() =>
+                                                                router.delete(
+                                                                    contactsDestroy.url(
+                                                                        {
+                                                                            contact:
+                                                                                c.id,
+                                                                        },
+                                                                    ),
+                                                                    {
+                                                                        preserveScroll: true,
+                                                                    },
+                                                                )
+                                                            }
+                                                            trigger={
                                                                 <Button
-                                                                    type="submit"
+                                                                    type="button"
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     aria-label="Delete person"
                                                                     className="text-destructive hover:text-destructive"
-                                                                    disabled={
-                                                                        processing
-                                                                    }
                                                                 >
                                                                     <Trash2 className="size-4" />
                                                                 </Button>
-                                                            )}
-                                                        </Form>
+                                                            }
+                                                        />
                                                     </div>
                                                 </td>
                                             </tr>
