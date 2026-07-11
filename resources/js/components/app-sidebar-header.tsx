@@ -21,7 +21,7 @@ export function AppSidebarHeader({
     const getInitials = useInitials();
 
     return (
-        <header className="flex h-16 w-full shrink-0 items-center border-b border-sidebar-border/50 px-0 pt-[max(0.5rem,env(safe-area-inset-top))] transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sm:px-4 md:px-6 md:pl-7">
+        <header className="sticky top-0 z-30 -mx-2 flex h-16 w-full shrink-0 items-center border-b border-sidebar-border/50 bg-background/85 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-sm transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 supports-backdrop-filter:bg-background/70 sm:-mx-4 sm:px-4 md:-mx-5 md:px-5 md:pl-7">
             <div className="flex w-full min-w-0 items-center gap-2 md:gap-4">
                 <SidebarTrigger className="shrink-0" />
                 <div className="min-w-0 flex-1 overflow-hidden">
