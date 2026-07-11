@@ -10,7 +10,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -395,16 +395,17 @@ export default function TransactionsIndex({
         }
     };
 
-    const typeMeta = (type: string) => {
-        if (type === 'income') {
-            return {
-                label: 'Income',
-                cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-            };
-        }
+    const typeMeta = useCallback(
+        (type: string) => {
+            if (type === 'income') {
+                return {
+                    label: 'Income',
+                    cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+                };
+            }
 
-        if (type === 'expense') {
-            return {
+            if (type === 'expense') {
+                return {
                 label: 'Expense',
                 cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
             };
@@ -438,11 +439,13 @@ export default function TransactionsIndex({
             };
         }
 
-        return {
-            label: types[type] ?? type,
-            cls: 'bg-muted text-muted-foreground',
-        };
-    };
+            return {
+                label: types[type] ?? type,
+                cls: 'bg-muted text-muted-foreground',
+            };
+        },
+        [types],
+    );
 
     // Row-object adapters over the pure helpers in @/lib/transactions.
     const settledFor = (t: Props['transactions'][number]) =>
@@ -584,7 +587,7 @@ export default function TransactionsIndex({
         filterType,
         filterStatus,
         filterContact,
-        types,
+        typeMeta,
         dateFrom,
         dateTo,
         dateRangeInvalid,

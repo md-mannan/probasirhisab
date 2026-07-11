@@ -40,7 +40,7 @@ Artisan::command('wayfinder:generate-safe {--path=} {--skip-actions} {--skip-rou
                 }
 
                 $contents = File::get($file->getPathname());
-                $lines = preg_split("/\\r\\n|\\n|\\r/", $contents);
+                $lines = preg_split('/\\r\\n|\\n|\\r/', $contents);
                 if (! is_array($lines) || count($lines) < 2) {
                     continue;
                 }
