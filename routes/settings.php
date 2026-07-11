@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\BrandingController;
 use App\Http\Controllers\Settings\CurrencyController;
 use App\Http\Controllers\Settings\DatabaseBackupController;
 use App\Http\Controllers\Settings\ProfileController;
@@ -18,6 +19,12 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified', 'staff'])->group(function () {
+    Route::get('settings/branding', [BrandingController::class, 'edit'])->name('settings.branding.edit');
+    Route::post('settings/branding', [BrandingController::class, 'update'])
+        ->middleware('throttle:20,1')
+        ->name('settings.branding.update');
+    Route::delete('settings/branding', [BrandingController::class, 'destroy'])->name('settings.branding.destroy');
+
     Route::get('settings/database', [DatabaseBackupController::class, 'edit'])->name('settings.database.edit');
     Route::get('settings/database/download', [DatabaseBackupController::class, 'download'])
         ->middleware('throttle:20,1')

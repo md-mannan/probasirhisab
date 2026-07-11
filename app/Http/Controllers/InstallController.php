@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Services\EnvFileWriter;
+use App\Support\Branding;
 use App\Support\Installation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -167,7 +168,7 @@ class InstallController extends Controller
         }
 
         if ($request->hasFile('logo')) {
-            Storage::disk('public')->putFileAs('/', $request->file('logo'), 'app-logo.png');
+            Storage::disk('public')->putFileAs('/', $request->file('logo'), Branding::LOGO_PATH);
         }
 
         Installation::markInstalled();
