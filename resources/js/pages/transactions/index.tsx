@@ -1504,7 +1504,7 @@ export default function TransactionsIndex({
                                     )}
                                 </div>
                             ) : (
-                                <div className="-mx-4 max-h-[calc(100dvh-14rem)] overflow-auto px-4">
+                                <div className="-mx-4 max-h-[calc(100dvh-18rem)] overflow-auto px-4">
                                     <TooltipProvider delayDuration={150}>
                                         <table className="w-full min-w-[980px] border-separate border-spacing-0 text-sm table-fixed">
                                         <thead>
