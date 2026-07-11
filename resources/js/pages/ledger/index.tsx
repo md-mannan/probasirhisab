@@ -24,6 +24,8 @@ import {
     downloadLedgerPdf,
     printLedgerTable,
 } from '@/lib/ledger-export';
+import { formatFixed } from '@/lib/money';
+import { formatDateDMY } from '@/lib/transactions';
 import { index as ledgerIndex } from '@/routes/ledger';
 import { show as transactionsShow } from '@/routes/transactions';
 
@@ -51,6 +53,12 @@ type Props = {
         running_primary: string;
         running_secondary: string | null;
     }>;
+    listMeta?: {
+        shown: number;
+        total: number;
+        limit: number;
+        truncated: boolean;
+    };
 };
 
 export default function LedgerIndex({
@@ -60,6 +68,7 @@ export default function LedgerIndex({
     primaryDecimals,
     secondaryDecimals,
     lines,
+    listMeta,
 }: Props) {
     const [tableSearch, setTableSearch] = useState('');
     const [filterType, setFilterType] = useState<string>('all');
@@ -68,24 +77,6 @@ export default function LedgerIndex({
     const [exportSelectKey, setExportSelectKey] = useState(0);
 
     const typeEntries = useMemo(() => Object.entries(types), [types]);
-
-    const formatDateDMY = (iso: string) => {
-        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-
-        if (!m) {
-            return iso;
-        }
-
-        return `${m[3]}/${m[2]}/${m[1]}`;
-    };
-
-    const formatFixed = (value: number, decimals: number) => {
-        if (!Number.isFinite(value)) {
-            return '';
-        }
-
-        return value.toFixed(decimals);
-    };
 
     const typeLabel = (type: string) => types[type] ?? type;
 
@@ -273,6 +264,13 @@ export default function LedgerIndex({
                     title="Ledger"
                     description="Posted entries from your transactions (chronological running balance)"
                 />
+
+                {listMeta?.truncated ? (
+                    <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                        Showing {listMeta.shown} of {listMeta.total} ledger
+                        entries. Use the filters below to narrow the range.
+                    </div>
+                ) : null}
 
                 <div className="rounded-xl border border-sidebar-border/70 bg-card">
                     {lines.length === 0 ? (
@@ -493,31 +491,31 @@ export default function LedgerIndex({
                                             </colgroup>
                                             <thead>
                                                 <tr className="border-b border-sidebar-border/70 text-left font-normal">
-                                                    <th className="sticky top-0 z-20 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
                                                         SL
                                                     </th>
-                                                    <th className="sticky top-0 z-20 bg-muted/50 px-3 py-3 pr-4 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 pr-4 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
                                                         Date
                                                     </th>
-                                                    <th className="sticky top-0 z-20 border-l border-sidebar-border/60 bg-muted/50 px-3 py-3 pl-4 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-16 z-20 border-l border-sidebar-border/60 bg-muted/50 px-3 py-3 pl-4 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
                                                         Type
                                                     </th>
-                                                    <th className="sticky top-0 z-20 min-w-0 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-16 z-20 min-w-0 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
                                                         Description
                                                     </th>
-                                                    <th className="sticky top-0 z-20 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
                                                         Category
                                                     </th>
-                                                    <th className="sticky top-0 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
                                                         Debit
                                                     </th>
-                                                    <th className="sticky top-0 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
                                                         Credit
                                                     </th>
-                                                    <th className="sticky top-0 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
                                                         Balance
                                                     </th>
-                                                    <th className="sticky top-0 z-20 bg-muted/50 px-2 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40"></th>
+                                                    <th className="sticky top-16 z-20 bg-muted/50 px-2 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40"></th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-sidebar-border/60">

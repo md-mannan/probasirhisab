@@ -82,8 +82,8 @@ class TransactionSettlementController extends Controller
             'sort_order' => TransactionListSortOrder::nextForUser($user->id),
             'amount' => $add,
             'paid_on' => $data['paid_on'],
-            'source' => $data['source'] ? trim($data['source']) : null,
-            'note' => $data['note'] ? trim($data['note']) : null,
+            'source' => ($data['source'] ?? null) ? trim($data['source']) : null,
+            'note' => ($data['note'] ?? null) ? trim($data['note']) : null,
         ]);
 
         $transaction->settled_amount = TransactionSettlement::query()
@@ -158,8 +158,8 @@ class TransactionSettlementController extends Controller
             'category_id' => $category->id,
             'amount' => $nextAmount,
             'paid_on' => $data['paid_on'],
-            'source' => $data['source'] ? trim($data['source']) : null,
-            'note' => $data['note'] ? trim($data['note']) : null,
+            'source' => ($data['source'] ?? null) ? trim($data['source']) : null,
+            'note' => ($data['note'] ?? null) ? trim($data['note']) : null,
         ]);
         $settlement->saveOrFail();
 

@@ -1,6 +1,7 @@
-import { Form, Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +28,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import {
     Tooltip,
@@ -80,7 +80,6 @@ export default function TransactionShow({
     secondaryCurrency,
     primaryDecimals,
     secondaryDecimals,
-    contacts,
     categoriesByType,
     settlementCategories,
     defaultSettlementCategoryId,
@@ -992,25 +991,28 @@ return;
                                 </form>
                             </DialogContent>
                         </Dialog>
-                        <Form
-                            action={transactionsDestroy.url({
-                                transaction: transaction.id,
-                            })}
-                            method="delete"
-                            className="inline"
-                        >
-                            {({ processing }) => (
+                        <ConfirmDeleteDialog
+                            title="Delete transaction?"
+                            description="This permanently removes the transaction and its ledger entries. This cannot be undone."
+                            confirmLabel="Delete transaction"
+                            onConfirm={() =>
+                                router.delete(
+                                    transactionsDestroy.url({
+                                        transaction: transaction.id,
+                                    }),
+                                )
+                            }
+                            trigger={
                                 <Button
-                                    type="submit"
+                                    type="button"
                                     variant="destructive"
                                     size="sm"
-                                    disabled={processing}
                                 >
                                     <Trash2 className="mr-2 size-4" />
                                     Delete Transaction
                                 </Button>
-                            )}
-                        </Form>
+                            }
+                        />
                     </div>
                 </div>
 
@@ -1395,13 +1397,11 @@ return;
                                                             >
                                                                 <Pencil className="size-4" />
                                                             </Button>
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                aria-label="Delete payment"
-                                                                className="text-destructive hover:text-destructive"
-                                                                onClick={() =>
+                                                            <ConfirmDeleteDialog
+                                                                title="Delete payment?"
+                                                                description="This removes the settlement and updates the settled total. This cannot be undone."
+                                                                confirmLabel="Delete payment"
+                                                                onConfirm={() =>
                                                                     router.delete(
                                                                         settlementRoutes.destroy.url(
                                                                             {
@@ -1416,9 +1416,18 @@ return;
                                                                         },
                                                                     )
                                                                 }
-                                                            >
-                                                                <Trash2 className="size-4" />
-                                                            </Button>
+                                                                trigger={
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        aria-label="Delete payment"
+                                                                        className="text-destructive hover:text-destructive"
+                                                                    >
+                                                                        <Trash2 className="size-4" />
+                                                                    </Button>
+                                                                }
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1540,13 +1549,11 @@ return;
                                                                 >
                                                                     <Pencil className="size-4" />
                                                                 </Button>
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    aria-label="Delete payment"
-                                                                    className="text-destructive hover:text-destructive"
-                                                                    onClick={() =>
+                                                                <ConfirmDeleteDialog
+                                                                    title="Delete payment?"
+                                                                    description="This removes the settlement and updates the settled total. This cannot be undone."
+                                                                    confirmLabel="Delete payment"
+                                                                    onConfirm={() =>
                                                                         router.delete(
                                                                             settlementRoutes.destroy.url(
                                                                                 {
@@ -1561,9 +1568,18 @@ return;
                                                                             },
                                                                         )
                                                                     }
-                                                                >
-                                                                    <Trash2 className="size-4" />
-                                                                </Button>
+                                                                    trigger={
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="icon"
+                                                                            aria-label="Delete payment"
+                                                                            className="text-destructive hover:text-destructive"
+                                                                        >
+                                                                            <Trash2 className="size-4" />
+                                                                        </Button>
+                                                                    }
+                                                                />
                                                             </div>
                                                         </td>
                                                     </tr>

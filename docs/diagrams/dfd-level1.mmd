@@ -1,0 +1,40 @@
+flowchart TB
+    User([User])
+    FX([Exchange-Rate API])
+
+    subgraph Processes
+        P1[1.0 Auth<br/>Fortify]
+        P2[2.0 Transaction Mgmt]
+        P3[3.0 Ledger Sync]
+        P4[4.0 Analytics & Reports]
+        P5[5.0 FX Service<br/>15-min cache]
+        P6[6.0 Admin & Settings]
+        P7[7.0 Installer]
+    end
+
+    D1[(D1 users / sessions)]
+    D2[(D2 transactions)]
+    D3[(D3 contact_transaction)]
+    D4[(D4 categories / contacts)]
+    D5[(D5 ledger_entries)]
+    D6[(D6 transaction_settlements)]
+    D7[(D7 exchange_rate_settings)]
+
+    User -->|login / 2FA| P1 --> D1
+    User -->|create / edit tx| P2
+    P2 <--> D2
+    P2 --> D3
+    P2 <--> D4
+    P2 -->|syncForTransaction| P3 --> D5
+    User -->|add settlement| P2 --> D6
+    P3 --> D6
+    User -->|dashboard / reports| P4
+    P4 --- D2
+    P4 --- D5
+    P4 --- D6
+    User -->|FX preview| P5 -->|request| FX
+    FX -->|rate| P5
+    P5 <--> D7
+    User -->|settings / users / backup| P6 <--> D1
+    User -->|first-run install| P7
+    P7 -->|.env, migrate, lock| D1

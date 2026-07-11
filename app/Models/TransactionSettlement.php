@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\TransactionSettlementFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class TransactionSettlement extends Model
 {
+    /** @use HasFactory<TransactionSettlementFactory> */
+    use HasFactory;
+
     /**
      * @return array<string, string>
      */

@@ -39,6 +39,11 @@ import { Bar } from 'react-chartjs-2';
 import { CountUpText } from '@/components/count-up-text';
 import { ClientOnly } from '@/components/client-only';
 import { DashboardSectionCarousel } from '@/components/dashboard-section-carousel';
+import {
+    formatCompact,
+    formatFixed,
+    parseAmount,
+} from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import { tileOrder as patchDashboardTileOrder } from '@/routes/dashboard';
@@ -207,38 +212,9 @@ function trendRowsHaveData(rows: TrendRow[]): boolean {
     );
 }
 
-function num(v: string): number | null {
-    const n = Number(v);
-
-    return Number.isFinite(n) ? n : null;
-}
-
-function formatFixed(value: number, decimals: number): string {
-    return value.toFixed(decimals);
-}
-
-function formatCompact(
-    value: number,
-    decimals: number,
-    currency: string,
-): string {
-    const abs = Math.abs(value);
-    const sign = value < 0 ? '−' : '';
-
-    if (abs >= 1_000_000) {
-        return `${sign}${(abs / 1_000_000).toFixed(1)}M ${currency}`;
-    }
-
-    if (abs >= 10_000) {
-        return `${sign}${(abs / 1000).toFixed(0)}k ${currency}`;
-    }
-
-    if (abs >= 1000) {
-        return `${sign}${(abs / 1000).toFixed(1)}k ${currency}`;
-    }
-
-    return `${sign}${abs.toFixed(decimals)} ${currency}`;
-}
+// Money parsing/formatting now lives in @/lib/money. `num` stays as a local alias
+// for parseAmount to keep the many call sites in this large component unchanged.
+const num = parseAmount;
 
 function TrendsVolumePanel({
     title,

@@ -1,6 +1,7 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -134,22 +135,22 @@ export default function ContactsIndex({
                             <table className="w-full min-w-[980px] border-separate border-spacing-0 text-sm">
                                 <thead>
                                     <tr className="border-b border-sidebar-border/70 text-left font-medium">
-                                        <th className="sticky top-0 z-20 w-16 bg-muted/40 px-4 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                        <th className="sticky top-16 z-20 w-16 bg-muted/40 px-4 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                             SL
                                         </th>
-                                        <th className="sticky top-0 z-20 bg-muted/40 px-4 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                        <th className="sticky top-16 z-20 bg-muted/40 px-4 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                             Name
                                         </th>
-                                        <th className="sticky top-0 z-20 w-44 bg-muted/40 px-4 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                        <th className="sticky top-16 z-20 w-44 bg-muted/40 px-4 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                             Income
                                         </th>
-                                        <th className="sticky top-0 z-20 w-52 bg-muted/40 px-4 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                        <th className="sticky top-16 z-20 w-52 bg-muted/40 px-4 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                             Outstanding
                                         </th>
-                                        <th className="sticky top-0 z-20 w-44 bg-muted/40 px-4 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                        <th className="sticky top-16 z-20 w-44 bg-muted/40 px-4 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                             Net (AR − AP)
                                         </th>
-                                        <th className="sticky top-0 z-20 w-28 bg-muted/40 px-4 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                        <th className="sticky top-16 z-20 w-28 bg-muted/40 px-4 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                             Actions
                                         </th>
                                     </tr>
@@ -245,36 +246,48 @@ export default function ContactsIndex({
                                                             <Pencil className="size-4" />
                                                         </Button>
 
-                                                        <Form
-                                                            action={contactsDestroy.url(
-                                                                {
-                                                                    contact:
-                                                                        c.id,
-                                                                },
-                                                            )}
-                                                            method="delete"
-                                                            options={{
-                                                                preserveScroll: true,
-                                                            }}
-                                                            className="inline"
-                                                        >
-                                                            {({
-                                                                processing,
-                                                            }) => (
+                                                        <ConfirmDeleteDialog
+                                                            title="Delete person?"
+                                                            description={
+                                                                <>
+                                                                    “{c.name}”
+                                                                    will be
+                                                                    removed.
+                                                                    Transactions
+                                                                    linked to
+                                                                    this person
+                                                                    keep their
+                                                                    record. This
+                                                                    cannot be
+                                                                    undone.
+                                                                </>
+                                                            }
+                                                            confirmLabel="Delete person"
+                                                            onConfirm={() =>
+                                                                router.delete(
+                                                                    contactsDestroy.url(
+                                                                        {
+                                                                            contact:
+                                                                                c.id,
+                                                                        },
+                                                                    ),
+                                                                    {
+                                                                        preserveScroll: true,
+                                                                    },
+                                                                )
+                                                            }
+                                                            trigger={
                                                                 <Button
-                                                                    type="submit"
+                                                                    type="button"
                                                                     variant="ghost"
                                                                     size="icon"
                                                                     aria-label="Delete person"
                                                                     className="text-destructive hover:text-destructive"
-                                                                    disabled={
-                                                                        processing
-                                                                    }
                                                                 >
                                                                     <Trash2 className="size-4" />
                                                                 </Button>
-                                                            )}
-                                                        </Form>
+                                                            }
+                                                        />
                                                     </div>
                                                 </td>
                                             </tr>

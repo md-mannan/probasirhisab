@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\UserRole;
+use App\Support\Branding;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -45,9 +46,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'branding' => [
                 'appName' => config('app.name'),
-                'logoUrl' => file_exists(public_path('storage/app-logo.png'))
-                    ? asset('storage/app-logo.png?v='.filemtime(public_path('storage/app-logo.png')))
-                    : null,
+                'logoUrl' => Branding::logoUrl(),
             ],
             'canManageUsers' => $user !== null
                 && $user->role instanceof UserRole

@@ -1,6 +1,7 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, router } from '@inertiajs/react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -152,7 +153,7 @@ export default function CategoriesIndex({ types, categories }: Props) {
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70">
-                    <div className="sticky top-0 z-20 grid grid-cols-12 gap-2 border-b border-sidebar-border/70 bg-muted/40 px-4 py-2 text-sm font-medium backdrop-blur supports-backdrop-filter:bg-muted/30">
+                    <div className="sticky top-16 z-20 grid grid-cols-12 gap-2 border-b border-sidebar-border/70 bg-muted/40 px-4 py-2 text-sm font-medium backdrop-blur supports-backdrop-filter:bg-muted/30">
                         <div className="col-span-4">Name</div>
                         <div className="col-span-4">Type</div>
                         <div className="col-span-4 text-right">Actions</div>
@@ -184,29 +185,40 @@ export default function CategoriesIndex({ types, categories }: Props) {
                                         >
                                             <Pencil className="size-4" />
                                         </Button>
-                                        <Form
-                                            action={categoriesDestroy.url({
-                                                category: c.id,
-                                            })}
-                                            method="delete"
-                                            options={{
-                                                preserveScroll: true,
-                                            }}
-                                            className="inline"
-                                        >
-                                            {({ processing }) => (
+                                        <ConfirmDeleteDialog
+                                            title="Delete category?"
+                                            description={
+                                                <>
+                                                    “{c.name}” will be removed.
+                                                    Transactions using it will
+                                                    keep their record but lose
+                                                    this category. This cannot be
+                                                    undone.
+                                                </>
+                                            }
+                                            confirmLabel="Delete category"
+                                            onConfirm={() =>
+                                                router.delete(
+                                                    categoriesDestroy.url({
+                                                        category: c.id,
+                                                    }),
+                                                    {
+                                                        preserveScroll: true,
+                                                    },
+                                                )
+                                            }
+                                            trigger={
                                                 <Button
-                                                    type="submit"
+                                                    type="button"
                                                     variant="ghost"
                                                     className="text-destructive hover:text-destructive"
-                                                    disabled={processing}
                                                     size="icon"
                                                     aria-label="Delete category"
                                                 >
                                                     <Trash2 className="size-4" />
                                                 </Button>
-                                            )}
-                                        </Form>
+                                            }
+                                        />
                                     </div>
                                 </div>
                             ))

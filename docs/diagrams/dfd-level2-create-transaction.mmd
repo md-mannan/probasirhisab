@@ -1,0 +1,29 @@
+flowchart TB
+    Req[/Request: type, amounts, rate,<br/>category_id, contact_ids,<br/>occurred_on, note/]
+    V{2.1 Validate input}
+    D[2.2 Derive missing amount from rate]
+    C{2.3 Resolve & authorize category}
+    CT{2.4 Validate contacts ownership}
+    G{2.5 Cash guard<br/>expense / receivable}
+    W[2.6 Create transaction row]
+    SO[2.7 Assign sort_order = max+1]
+    PV[2.8 Sync contacts pivot]
+    LS[2.9 Ledger sync]
+    Toast[/Flash toast + Inertia redirect back/]
+
+    D2[(transactions)]
+    D3[(contact_transaction)]
+    D5[(ledger_entries)]
+
+    Req --> V
+    V -->|fail| Err1[/back with errors/]
+    V -->|ok| D --> C
+    C -->|invalid| Err2[/back with errors/]
+    C -->|ok| CT
+    CT -->|invalid| Err3[/back with errors/]
+    CT -->|ok| G
+    G -->|insufficient cash| Err4[/back with errors/]
+    G -->|ok| W --> D2
+    W --> SO --> PV --> D3
+    PV --> LS --> D5
+    LS --> Toast

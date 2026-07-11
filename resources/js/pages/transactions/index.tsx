@@ -2,6 +2,7 @@ import { Form, Head, Link, router } from '@inertiajs/react';
 import {
     Eye,
     GripVertical,
+    Loader2,
     Pencil,
     Plus,
     Printer,
@@ -9,7 +10,8 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -43,6 +45,15 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { formatFixed } from '@/lib/money';
+import {
+    directionForType,
+    formatDateDMY,
+    isObligation,
+    settledFor as settledForAmount,
+    statusLabel,
+    totalFor as totalForAmount,
+} from '@/lib/transactions';
 import {
     buildTransactionsExportTable,
     downloadTransactionsExcel,
@@ -92,6 +103,13 @@ type Props = {
     }>;
     /** Net cash (primary currency) from ledger; used to gate spend/lend/settle-payable. */
     primaryCashBalance: number;
+    /** List truncation info so the UI can warn instead of silently hiding rows. */
+    listMeta?: {
+        shown: number;
+        total: number;
+        limit: number;
+        truncated: boolean;
+    };
 };
 
 /** Paired dialog fields: shared label height + hint/error band so inputs align across columns. */
@@ -109,6 +127,7 @@ export default function TransactionsIndex({
     contacts,
     transactions,
     primaryCashBalance,
+    listMeta,
 }: Props) {
     const [orderedTxs, setOrderedTxs] = useState(transactions);
     const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -119,22 +138,18 @@ export default function TransactionsIndex({
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [exportSelectKey, setExportSelectKey] = useState(0);
+    const [exporting, setExporting] = useState(false);
 
-    useEffect(() => {
+    // Reset the drag-ordered list whenever the server sends a fresh transactions
+    // prop (after a reorder patch or any reload). Done during render via the
+    // documented "adjust state when a prop changes" pattern instead of an effect,
+    // so there is no extra commit/cascading render.
+    const [prevTransactions, setPrevTransactions] = useState(transactions);
+
+    if (transactions !== prevTransactions) {
+        setPrevTransactions(transactions);
         setOrderedTxs(transactions);
-    }, [transactions]);
-
-    const persistOrder = (ids: number[]) => {
-        router.patch(
-            '/transactions/reorder',
-            { ids },
-            {
-                preserveScroll: true,
-                preserveState: false,
-                only: ['transactions'],
-            },
-        );
-    };
+    }
 
     const persistRowOrder = (ids: string[]) => {
         router.patch(
@@ -216,7 +231,7 @@ export default function TransactionsIndex({
 
     const openCreate = (type: string) => {
         setCreateType(type);
-        setCategoryId('');
+        setCategoryId(pickCategoryId(categoriesByType[type] ?? [], ''));
         setPrimaryAmount('');
         setSecondaryAmount('');
         setRate(defaultRate ?? '');
@@ -274,6 +289,9 @@ export default function TransactionsIndex({
         setEditOpen(true);
     };
 
+    // Deep-link support: on mount, read ?edit=<id> from the URL (an external
+    // system) and open that transaction's edit dialog, then strip the param. This
+    // is a legitimate mount-time effect syncing with the URL.
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const editId = params.get('edit');
@@ -296,6 +314,9 @@ export default function TransactionsIndex({
             return;
         }
 
+        // Opening from the URL is the intended side effect here, so the
+        // set-state-in-effect heuristic is suppressed for this one call.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         openEdit(tx);
 
         // Clean the URL after opening to avoid re-opening after save/back/refresh.
@@ -312,84 +333,79 @@ export default function TransactionsIndex({
     const categories = categoriesByType[createType] ?? [];
     const editCategories = categoriesByType[editType] ?? [];
 
-    useEffect(() => {
-        if (!createOpen) {
-            return;
+    // Keep the current selection if still valid, otherwise default to the first
+    // category (or empty when the type has none). Computed at the event that changes
+    // the list rather than in an effect, so there is no cascading re-render.
+    const pickCategoryId = (
+        list: Array<{ id: number }>,
+        currentId: string,
+    ): string => {
+        if (list.length === 0) {
+            return '';
         }
 
-        if (categories.length === 0) {
-            setCategoryId('');
-
-            return;
+        if (list.some((c) => String(c.id) === currentId)) {
+            return currentId;
         }
 
-        if (!categories.some((c) => String(c.id) === categoryId)) {
-            setCategoryId(String(categories[0].id));
-        }
-    }, [categories, categoryId, createOpen]);
+        return String(list[0].id);
+    };
 
-    useEffect(() => {
-        if (!editOpen) {
-            return;
-        }
-
-        if (editCategories.length === 0) {
-            setEditCategoryId('');
-
-            return;
-        }
-
-        if (!editCategories.some((c) => String(c.id) === editCategoryId)) {
-            setEditCategoryId(String(editCategories[0].id));
-        }
-    }, [editCategories, editCategoryId, editOpen]);
+    const changeEditType = (type: string) => {
+        setEditType(type);
+        setEditCategoryId(
+            pickCategoryId(categoriesByType[type] ?? [], ''),
+        );
+    };
 
     const parsedRate = Number(rate);
     const canCalc = Number.isFinite(parsedRate) && parsedRate > 0;
 
-    const formatDateDMY = (iso: string) => {
-        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    // Recompute the paired amount from a new FX rate. Runs at the rate input's
+    // onChange (an event) rather than in an effect, avoiding a cascading render.
+    const applyRateToCreate = (nextRate: string) => {
+        setRate(nextRate);
 
-        if (!m) {
-            return iso;
+        const r = Number(nextRate);
+
+        if (!Number.isFinite(r) || r <= 0) {
+            return;
         }
 
-        return `${m[3]}/${m[2]}/${m[1]}`;
+        if (lastEdited === 'primary') {
+            if (primaryAmount === '') {
+                return;
+            }
+
+            const p = Number(primaryAmount);
+
+            if (Number.isFinite(p)) {
+                setSecondaryAmount(formatFixed(p * r, secondaryDecimals));
+            }
+        } else {
+            if (secondaryAmount === '') {
+                return;
+            }
+
+            const s = Number(secondaryAmount);
+
+            if (Number.isFinite(s)) {
+                setPrimaryAmount(formatFixed(s / r, primaryDecimals));
+            }
+        }
     };
 
-    const formatFixed = (value: number, decimals: number) => {
-        if (!Number.isFinite(value)) {
-            return '';
-        }
+    const typeMeta = useCallback(
+        (type: string) => {
+            if (type === 'income') {
+                return {
+                    label: 'Income',
+                    cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+                };
+            }
 
-        return value.toFixed(decimals);
-    };
-
-    const directionForType = (type: string) => {
-        if (
-            type === 'expense' ||
-            type === 'payable' ||
-            type === 'settle_payable'
-        ) {
-            return -1;
-        }
-
-        return 1; // income + receivable
-    };
-
-    const isObligation = (type: string) =>
-        type === 'payable' || type === 'receivable';
-
-    const typeMeta = (type: string) => {
-        if (type === 'income') {
-            return {
-                label: 'Income',
-                cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-            };
-        }
-
-        if (type === 'expense') {
-            return {
+            if (type === 'expense') {
+                return {
                 label: 'Expense',
                 cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
             };
@@ -423,52 +439,20 @@ export default function TransactionsIndex({
             };
         }
 
-        return {
-            label: types[type] ?? type,
-            cls: 'bg-muted text-muted-foreground',
-        };
-    };
+            return {
+                label: types[type] ?? type,
+                cls: 'bg-muted text-muted-foreground',
+            };
+        },
+        [types],
+    );
 
-    const statusLabel = (
-        status: Props['transactions'][number]['settlement_status'],
-    ) => {
-        if (status === 'unsettled') {
-            return 'Unsettled';
-        }
+    // Row-object adapters over the pure helpers in @/lib/transactions.
+    const settledFor = (t: Props['transactions'][number]) =>
+        settledForAmount(t.settled_amount);
 
-        if (status === 'partial') {
-            return 'Partial';
-        }
-
-        if (status === 'settled') {
-            return 'Settled';
-        }
-
-        return '—';
-    };
-
-    const remainingFor = (t: Props['transactions'][number]) => {
-        const total = Math.abs(Number(t.amount));
-        const settled = Math.max(0, Number(t.settled_amount ?? 0));
-
-        if (!Number.isFinite(total) || !Number.isFinite(settled)) {
-            return null;
-        }
-
-        return Math.max(0, total - settled);
-    };
-
-    const settledFor = (t: Props['transactions'][number]) => {
-        const settled = Math.max(0, Number(t.settled_amount ?? 0));
-
-        return Number.isFinite(settled) ? settled : null;
-    };
-
-    const totalFor = (t: Props['transactions'][number]) => {
-        const total = Math.abs(Number(t.amount));
-
-        return Number.isFinite(total) ? total : null;
-    };
+    const totalFor = (t: Props['transactions'][number]) =>
+        totalForAmount(t.amount);
 
     const progressFor = (t: Props['transactions'][number]) => {
         const total = totalFor(t);
@@ -603,7 +587,7 @@ export default function TransactionsIndex({
         filterType,
         filterStatus,
         filterContact,
-        types,
+        typeMeta,
         dateFrom,
         dateTo,
         dateRangeInvalid,
@@ -625,24 +609,29 @@ export default function TransactionsIndex({
         );
         const period = periodLabelForExport;
         void (async () => {
-            if (fmt === 'pdf') {
-                await downloadTransactionsPdf(
-                    headers,
-                    body,
-                    'Transactions',
-                    exportFilenameBase,
-                    period,
-                );
-            } else {
-                await downloadTransactionsExcel(
-                    headers,
-                    body,
-                    exportFilenameBase,
-                    period,
-                );
-            }
+            setExporting(true);
 
-            setExportSelectKey((k) => k + 1);
+            try {
+                if (fmt === 'pdf') {
+                    await downloadTransactionsPdf(
+                        headers,
+                        body,
+                        'Transactions',
+                        exportFilenameBase,
+                        period,
+                    );
+                } else {
+                    await downloadTransactionsExcel(
+                        headers,
+                        body,
+                        exportFilenameBase,
+                        period,
+                    );
+                }
+            } finally {
+                setExporting(false);
+                setExportSelectKey((k) => k + 1);
+            }
         })();
     };
 
@@ -659,86 +648,40 @@ export default function TransactionsIndex({
         );
     };
 
-    useEffect(() => {
-        if (!createOpen) {
-            return;
-        }
-
-        if (!canCalc) {
-            return;
-        }
-
-        if (lastEdited === 'primary') {
-            const p = Number(primaryAmount);
-
-            if (!Number.isFinite(p)) {
-                return;
-            }
-
-            if (primaryAmount === '') {
-                return;
-            }
-
-            const s = p * parsedRate;
-            setSecondaryAmount(formatFixed(s, secondaryDecimals));
-        } else {
-            const s = Number(secondaryAmount);
-
-            if (!Number.isFinite(s)) {
-                return;
-            }
-
-            if (secondaryAmount === '') {
-                return;
-            }
-
-            const p = s / parsedRate;
-            setPrimaryAmount(formatFixed(p, primaryDecimals));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rate]);
-
     const editParsedRate = Number(editRate);
     const editCanCalc = Number.isFinite(editParsedRate) && editParsedRate > 0;
 
-    useEffect(() => {
-        if (!editOpen) {
-            return;
-        }
+    const applyRateToEdit = (nextRate: string) => {
+        setEditRate(nextRate);
 
-        if (!editCanCalc) {
+        const r = Number(nextRate);
+
+        if (!Number.isFinite(r) || r <= 0) {
             return;
         }
 
         if (editLastEdited === 'primary') {
-            const p = Number(editPrimaryAmount);
-
-            if (!Number.isFinite(p)) {
-                return;
-            }
-
             if (editPrimaryAmount === '') {
                 return;
             }
 
-            const s = p * editParsedRate;
-            setEditSecondaryAmount(formatFixed(s, secondaryDecimals));
-        } else {
-            const s = Number(editSecondaryAmount);
+            const p = Number(editPrimaryAmount);
 
-            if (!Number.isFinite(s)) {
-                return;
+            if (Number.isFinite(p)) {
+                setEditSecondaryAmount(formatFixed(p * r, secondaryDecimals));
             }
-
+        } else {
             if (editSecondaryAmount === '') {
                 return;
             }
 
-            const p = s / editParsedRate;
-            setEditPrimaryAmount(formatFixed(p, primaryDecimals));
+            const s = Number(editSecondaryAmount);
+
+            if (Number.isFinite(s)) {
+                setEditPrimaryAmount(formatFixed(s / r, primaryDecimals));
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editRate]);
+    };
 
     return (
         <>
@@ -1105,7 +1048,9 @@ export default function TransactionsIndex({
                                                     inputMode="decimal"
                                                     value={rate}
                                                     onChange={(e) =>
-                                                        setRate(e.target.value)
+                                                        applyRateToCreate(
+                                                            e.target.value,
+                                                        )
                                                     }
                                                 />
                                                 <div className="mt-0.5 space-y-0.5">
@@ -1265,6 +1210,14 @@ export default function TransactionsIndex({
                         </DialogContent>
                     </Dialog>
                 </div>
+
+                {listMeta?.truncated ? (
+                    <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                        Showing the most recent {listMeta.shown} of{' '}
+                        {listMeta.total} entries. Use the filters below to narrow
+                        down older transactions.
+                    </div>
+                ) : null}
 
                 <div className="rounded-xl border border-sidebar-border/70 bg-card">
                     {orderedTxs.length === 0 ? (
@@ -1450,6 +1403,7 @@ export default function TransactionsIndex({
                                                     }
                                                 }}
                                                 disabled={
+                                                    exporting ||
                                                     dateRangeInvalid ||
                                                     filteredTxs.length === 0
                                                 }
@@ -1458,7 +1412,14 @@ export default function TransactionsIndex({
                                                     className="h-9 w-[108px] min-w-0 shrink-0 xl:w-[108px] xl:text-xs"
                                                     aria-label="Export transactions"
                                                 >
-                                                    <SelectValue placeholder="Export as…" />
+                                                    {exporting ? (
+                                                        <span className="flex items-center gap-1.5">
+                                                            <Loader2 className="size-3.5 animate-spin" />
+                                                            Exporting…
+                                                        </span>
+                                                    ) : (
+                                                        <SelectValue placeholder="Export as…" />
+                                                    )}
                                                 </SelectTrigger>
                                                 <SelectContent align="end">
                                                     <SelectItem value="pdf">
@@ -1548,31 +1509,31 @@ export default function TransactionsIndex({
                                         <table className="w-full min-w-[980px] border-separate border-spacing-0 table-fixed text-sm">
                                         <thead>
                                             <tr className="border-b border-sidebar-border/70 text-left font-medium">
-                                                <th className="sticky top-0 z-20 w-14 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-14 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     SL
                                                 </th>
-                                                <th className="sticky top-0 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     Date
                                                 </th>
-                                                <th className="sticky top-0 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     Type
                                                 </th>
-                                                <th className="sticky top-0 z-20 w-32 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     Person
                                                 </th>
-                                                <th className="sticky top-0 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     Category
                                                 </th>
-                                                <th className="sticky top-0 z-20 w-36 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-36 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     Source
                                                 </th>
-                                                <th className="sticky top-0 z-20 w-32 bg-muted/40 px-3 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     Amount
                                                 </th>
-                                                <th className="sticky top-0 z-20 w-32 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     Status
                                                 </th>
-                                                <th className="sticky top-0 z-20 w-24 bg-muted/40 px-3 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-24 bg-muted/40 px-3 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
                                                     Actions
                                                 </th>
                                             </tr>
@@ -1633,8 +1594,17 @@ export default function TransactionsIndex({
                                                     }}
                                                 >
                                                     <td className="px-3 py-3 align-middle text-muted-foreground">
-                                                        <div className="flex items-center gap-1">
-                                                            <GripVertical className="size-4 text-muted-foreground/70" />
+                                                        <div
+                                                            className="flex items-center gap-1"
+                                                            title="Drag to reorder"
+                                                        >
+                                                            <GripVertical
+                                                                aria-hidden="true"
+                                                                className="size-4 text-muted-foreground/70"
+                                                            />
+                                                            <span className="sr-only">
+                                                                Drag to reorder
+                                                            </span>
                                                             <span className="tabular-nums">
                                                                 {idx + 1}
                                                             </span>
@@ -1970,36 +1940,35 @@ export default function TransactionsIndex({
                                                                     >
                                                                         <Pencil className="size-4" />
                                                                     </Button>
-                                                                    <Form
-                                                                        action={transactionsDestroy.url(
-                                                                            {
-                                                                                transaction:
-                                                                                    t.transaction_id,
-                                                                            },
-                                                                        )}
-                                                                        method="delete"
-                                                                        options={{
-                                                                            preserveScroll: true,
-                                                                        }}
-                                                                        className="inline"
-                                                                    >
-                                                                        {({
-                                                                            processing,
-                                                                        }) => (
+                                                                    <ConfirmDeleteDialog
+                                                                        title="Delete transaction?"
+                                                                        description="This permanently removes the transaction and its ledger entries. This cannot be undone."
+                                                                        confirmLabel="Delete transaction"
+                                                                        onConfirm={() =>
+                                                                            router.delete(
+                                                                                transactionsDestroy.url(
+                                                                                    {
+                                                                                        transaction:
+                                                                                            t.transaction_id,
+                                                                                    },
+                                                                                ),
+                                                                                {
+                                                                                    preserveScroll: true,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                        trigger={
                                                                             <Button
-                                                                                type="submit"
+                                                                                type="button"
                                                                                 variant="ghost"
                                                                                 size="icon"
                                                                                 aria-label="Delete transaction"
                                                                                 className="text-destructive hover:text-destructive"
-                                                                                disabled={
-                                                                                    processing
-                                                                                }
                                                                             >
                                                                                 <Trash2 className="size-4" />
                                                                             </Button>
-                                                                        )}
-                                                                    </Form>
+                                                                        }
+                                                                    />
                                                                 </>
                                                             )}
                                                             {t.kind ===
@@ -2030,13 +1999,11 @@ export default function TransactionsIndex({
                                                                             <Pencil className="size-4" />
                                                                         </Link>
                                                                     </Button>
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        aria-label="Delete settlement"
-                                                                        className="text-destructive hover:text-destructive"
-                                                                        onClick={() =>
+                                                                    <ConfirmDeleteDialog
+                                                                        title="Delete settlement?"
+                                                                        description="This removes the settlement and updates the settled total. This cannot be undone."
+                                                                        confirmLabel="Delete settlement"
+                                                                        onConfirm={() =>
                                                                             router.delete(
                                                                                 `/transactions/${t.transaction_id}/settlements/${t.settlement_id}`,
                                                                                 {
@@ -2044,9 +2011,18 @@ export default function TransactionsIndex({
                                                                                 },
                                                                             )
                                                                         }
-                                                                    >
-                                                                        <Trash2 className="size-4" />
-                                                                    </Button>
+                                                                        trigger={
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                aria-label="Delete settlement"
+                                                                                className="text-destructive hover:text-destructive"
+                                                                            >
+                                                                                <Trash2 className="size-4" />
+                                                                            </Button>
+                                                                        }
+                                                                    />
                                                                 </>
                                                             ) : null}
                                                         </div>
@@ -2388,7 +2364,7 @@ export default function TransactionsIndex({
                                                     inputMode="decimal"
                                                     value={editRate}
                                                     onChange={(e) =>
-                                                        setEditRate(
+                                                        applyRateToEdit(
                                                             e.target.value,
                                                         )
                                                     }
@@ -2462,7 +2438,7 @@ export default function TransactionsIndex({
                                                 </div>
                                                 <Select
                                                     value={editType}
-                                                    onValueChange={setEditType}
+                                                    onValueChange={changeEditType}
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue placeholder="Select type" />
@@ -2497,45 +2473,28 @@ export default function TransactionsIndex({
                                                     className={`${TX_FIELD_COL} md:col-span-2`}
                                                 >
                                                     <div className={TX_LABEL_WRAP}>
-                                                        <Label
-                                                            htmlFor="edit_settled_amount"
-                                                            className="leading-snug"
-                                                        >
-                                                            Settled amount
-                                                            (optional)
+                                                        <Label className="leading-snug">
+                                                            Settled so far
                                                         </Label>
                                                     </div>
-                                                    <Input
-                                                        id="edit_settled_amount"
-                                                        name="settled_amount"
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        placeholder={formatFixed(
-                                                            0,
+                                                    <div className="rounded-md border border-sidebar-border/70 bg-muted/20 px-3 py-2 text-sm tabular-nums">
+                                                        {formatFixed(
+                                                            Math.max(
+                                                                0,
+                                                                Number(
+                                                                    editSettledAmount ||
+                                                                        0,
+                                                                ),
+                                                            ),
                                                             primaryDecimals,
-                                                        )}
-                                                        value={
-                                                            editSettledAmount
-                                                        }
-                                                        onChange={(e) =>
-                                                            setEditSettledAmount(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
-                                                    <div className="mt-0.5 space-y-0.5">
-                                                        <p className="text-xs leading-snug text-muted-foreground">
-                                                            Only for
-                                                            Payable/Receivable
-                                                            (supports partial
-                                                            settle).
-                                                        </p>
-                                                        <InputError
-                                                            message={
-                                                                errors.settled_amount
-                                                            }
-                                                        />
+                                                        )}{' '}
+                                                        {primaryCurrency}
                                                     </div>
+                                                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                                                        Add or edit payments from
+                                                        the transaction’s
+                                                        settlement view.
+                                                    </p>
                                                 </div>
                                             )}
 

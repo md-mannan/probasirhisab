@@ -8,6 +8,7 @@ use App\Support\Currency;
 use App\Support\DashboardTiles;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,11 +19,52 @@ class DashboardController extends Controller
         $user = $request->user();
         $primaryCurrency = $user->primary_currency ?: 'KWD';
         $secondaryCurrency = $user->secondary_currency ?: 'BDT';
+
+        // The heavy aggregation below scans every transaction + settlement and loops
+        // in PHP. Cache the computed payload keyed on a signature that changes on any
+        // data or currency-preference change, so repeat loads are instant and the
+        // cache self-invalidates. Ten-minute TTL bounds staleness for edge cases
+        // (e.g. a direct DB edit) where the signature would not change.
+        $payload = Cache::remember(
+            $this->cacheKey($user->id, $primaryCurrency, $secondaryCurrency),
+            now()->addMinutes(10),
+            fn (): array => $this->buildPayload($user->id, $primaryCurrency, $secondaryCurrency),
+        );
+
+        return Inertia::render('dashboard', [
+            't' => trans('dashboard'),
+            'dashboardTileOrder' => DashboardTiles::normalize($user->dashboard_tile_order),
+            ...$payload,
+        ]);
+    }
+
+    /** Signature over the user's data so the cache invalidates on any change. */
+    private function cacheKey(int $userId, string $primaryCurrency, string $secondaryCurrency): string
+    {
+        $txCount = Transaction::query()->where('user_id', $userId)->count();
+        $txMax = (string) Transaction::query()->where('user_id', $userId)->max('updated_at');
+        $stCount = TransactionSettlement::query()->where('user_id', $userId)->count();
+        $stMax = (string) TransactionSettlement::query()->where('user_id', $userId)->max('updated_at');
+
+        $signature = sha1(implode('|', [
+            $txCount, $txMax, $stCount, $stMax, $primaryCurrency, $secondaryCurrency,
+        ]));
+
+        return "dashboard.summary.{$userId}.{$signature}";
+    }
+
+    /**
+     * Compute the full dashboard payload (summary + trends + financial status).
+     *
+     * @return array<string, mixed>
+     */
+    private function buildPayload(int $userId, string $primaryCurrency, string $secondaryCurrency): array
+    {
         $primaryDecimals = Currency::decimalsFor($primaryCurrency);
         $secondaryDecimals = Currency::decimalsFor($secondaryCurrency);
 
         $transactions = Transaction::query()
-            ->where('user_id', $user->id)
+            ->where('user_id', $userId)
             ->orderBy('occurred_on')
             ->orderBy('id')
             ->get(['occurred_on', 'type', 'amount', 'secondary_amount', 'settled_amount']);
@@ -205,7 +247,7 @@ class DashboardController extends Controller
         }
 
         $settlementsForTrend = TransactionSettlement::query()
-            ->where('transaction_settlements.user_id', $user->id)
+            ->where('transaction_settlements.user_id', $userId)
             ->join('transactions as tr', 'transaction_settlements.transaction_id', '=', 'tr.id')
             ->whereIn('tr.type', ['payable', 'receivable'])
             ->select([
@@ -340,9 +382,7 @@ class DashboardController extends Controller
             ],
         ];
 
-        return Inertia::render('dashboard', [
-            't' => trans('dashboard'),
-            'dashboardTileOrder' => DashboardTiles::normalize($user->dashboard_tile_order),
+        return [
             'primaryCurrency' => $primaryCurrency,
             'secondaryCurrency' => $secondaryCurrency,
             'primaryDecimals' => $primaryDecimals,
@@ -386,7 +426,7 @@ class DashboardController extends Controller
             'monthlyTrend' => $monthlyTrend,
             'yearlyTrend' => $yearlyTrend,
             'financialStatus' => $financialRows,
-        ]);
+        ];
     }
 
     /**

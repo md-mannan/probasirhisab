@@ -11,6 +11,9 @@ use Inertia\Response;
 
 class LedgerController extends Controller
 {
+    /** Max ledger lines loaded into the running-balance view. */
+    private const ROW_LIMIT = 1000;
+
     /**
      * Legacy settlement rows stored "Settlement", "Settlement: …", or duplicated prefixes;
      * normalize to the note text only for display.
@@ -66,8 +69,13 @@ class LedgerController extends Controller
             // within a transaction row: show the base transaction line first, then settlement lines
             ->orderByRaw('ledger_entries.settlement_id is null desc')
             ->orderByDesc('ledger_entries.id')
-            ->limit(1000)
+            ->limit(self::ROW_LIMIT)
             ->get();
+
+        $entryTotal = LedgerEntry::query()
+            ->where('ledger_entries.user_id', $user->id)
+            ->whereHas('transaction')
+            ->count();
 
         $runningPrimary = 0.0;
         $runningSecondary = 0.0;
@@ -131,6 +139,12 @@ class LedgerController extends Controller
             'primaryDecimals' => $primaryDecimals,
             'secondaryDecimals' => $secondaryDecimals,
             'lines' => $lines,
+            'listMeta' => [
+                'shown' => $lines->count(),
+                'total' => $entryTotal,
+                'limit' => self::ROW_LIMIT,
+                'truncated' => $entryTotal > self::ROW_LIMIT,
+            ],
         ]);
     }
 }
