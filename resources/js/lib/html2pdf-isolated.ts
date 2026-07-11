@@ -6,9 +6,6 @@
  * Tailwind's `oklch()` stylesheets → crash. We keep markup in an iframe-only
  * document and run html2canvas on `iframe.contentDocument.body`, then jsPDF.
  */
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-
 type Margin = [number, number, number, number];
 
 export async function savePdfFromIsolatedHtml(
@@ -16,6 +13,13 @@ export async function savePdfFromIsolatedHtml(
     embeddedCss: string,
     html2pdfSettings: Record<string, unknown>,
 ): Promise<void> {
+    // jspdf + html2canvas are large and only needed on export, so they are
+    // loaded on demand here rather than shipped in the initial page bundle.
+    const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+    ]);
+
     const margin = (html2pdfSettings.margin as Margin) ?? [0, 0, 0, 0];
     const filename = (html2pdfSettings.filename as string) ?? 'export.pdf';
     const image = (html2pdfSettings.image as { type: string; quality: number }) ?? {

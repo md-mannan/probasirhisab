@@ -114,10 +114,9 @@ class TransactionController extends Controller
         $transaction->loadMissing(['category:id,name,type', 'contacts:id,name']);
         $computedSettled = null;
         if (in_array($transaction->type, ['payable', 'receivable'], true)) {
-            $computedSettled = TransactionSettlement::query()
-                ->where('transaction_id', $transaction->id)
-                ->where('user_id', $user->id)
-                ->sum('amount');
+            // Mirror the list/dashboard: read the maintained settled_amount column so
+            // every surface reports the same settled/remaining figures.
+            $computedSettled = (float) ($transaction->settled_amount ?? 0);
         }
 
         $settlementCategories = collect();
@@ -222,16 +221,17 @@ class TransactionController extends Controller
         $transactions = Transaction::query()
             ->where('user_id', $user->id)
             ->with(['category:id,name,type', 'contacts:id,name'])
-            ->withSum(['settlements as settlements_sum' => function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            }], 'amount')
             ->orderBy('sort_order')
             ->orderBy('occurred_on')
             ->orderBy('id')
             ->limit(self::ROW_LIMIT)
             ->get()
             ->map(function (Transaction $t) {
-                $computedSettled = (float) ($t->settlements_sum ?? 0);
+                // Use the maintained settled_amount column so the list matches the
+                // dashboard and balance sheet (which read the same column). The
+                // column reflects both the opening "already settled" amount entered
+                // at creation and later settlement records.
+                $computedSettled = (float) ($t->settled_amount ?? 0);
 
                 return [
                     'id' => 't-'.$t->id,
