@@ -687,7 +687,7 @@ export default function TransactionsIndex({
         <>
             <Head title="Transactions" />
 
-            <div className="flex h-[calc(100dvh-4rem)] min-h-0 flex-col space-y-6 py-4 pb-6 sm:py-6">
+            <div className="space-y-6 py-4 pb-6 sm:py-6">
                 <div className="mb-0 flex flex-wrap items-start justify-between gap-4">
                     <Heading
                         title="Transactions"
@@ -1219,13 +1219,13 @@ export default function TransactionsIndex({
                     </div>
                 ) : null}
 
-                <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-card">
+                <div className="rounded-xl border border-sidebar-border/70 bg-card">
                     {orderedTxs.length === 0 ? (
                         <div className="px-4 py-10 text-center text-sm text-muted-foreground">
                             No transactions yet.
                         </div>
                     ) : (
-                        <div className="flex w-full min-w-0 min-h-0 flex-1 flex-col">
+                        <div className="w-full min-w-0">
                             <div className="space-y-2 border-b border-sidebar-border/70 p-4">
                                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid xl:grid-cols-[minmax(140px,360px)_112px_126px_112px_128px_128px_minmax(148px,156px)]">
                                     <div className="w-full max-w-[360px] min-w-0">
@@ -1504,7 +1504,7 @@ export default function TransactionsIndex({
                                     )}
                                 </div>
                             ) : (
-                                <div className="-mx-4 min-h-0 flex-1 overflow-auto px-4">
+                                <div className="-mx-4 max-h-[calc(100dvh-13rem)] min-w-0 overflow-auto px-4">
                                     <TooltipProvider delayDuration={150}>
                                         <table className="w-full min-w-[980px] border-separate border-spacing-0 text-sm table-fixed">
                                         <thead>
