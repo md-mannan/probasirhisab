@@ -24,6 +24,8 @@ import {
     downloadLedgerPdf,
     printLedgerTable,
 } from '@/lib/ledger-export';
+import { formatFixed } from '@/lib/money';
+import { formatDateDMY } from '@/lib/transactions';
 import { index as ledgerIndex } from '@/routes/ledger';
 import { show as transactionsShow } from '@/routes/transactions';
 
@@ -51,6 +53,12 @@ type Props = {
         running_primary: string;
         running_secondary: string | null;
     }>;
+    listMeta?: {
+        shown: number;
+        total: number;
+        limit: number;
+        truncated: boolean;
+    };
 };
 
 export default function LedgerIndex({
@@ -60,6 +68,7 @@ export default function LedgerIndex({
     primaryDecimals,
     secondaryDecimals,
     lines,
+    listMeta,
 }: Props) {
     const [tableSearch, setTableSearch] = useState('');
     const [filterType, setFilterType] = useState<string>('all');
@@ -68,24 +77,6 @@ export default function LedgerIndex({
     const [exportSelectKey, setExportSelectKey] = useState(0);
 
     const typeEntries = useMemo(() => Object.entries(types), [types]);
-
-    const formatDateDMY = (iso: string) => {
-        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
-
-        if (!m) {
-            return iso;
-        }
-
-        return `${m[3]}/${m[2]}/${m[1]}`;
-    };
-
-    const formatFixed = (value: number, decimals: number) => {
-        if (!Number.isFinite(value)) {
-            return '';
-        }
-
-        return value.toFixed(decimals);
-    };
 
     const typeLabel = (type: string) => types[type] ?? type;
 
@@ -273,6 +264,13 @@ export default function LedgerIndex({
                     title="Ledger"
                     description="Posted entries from your transactions (chronological running balance)"
                 />
+
+                {listMeta?.truncated ? (
+                    <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                        Showing {listMeta.shown} of {listMeta.total} ledger
+                        entries. Use the filters below to narrow the range.
+                    </div>
+                ) : null}
 
                 <div className="rounded-xl border border-sidebar-border/70 bg-card">
                     {lines.length === 0 ? (

@@ -101,6 +101,13 @@ type Props = {
     }>;
     /** Net cash (primary currency) from ledger; used to gate spend/lend/settle-payable. */
     primaryCashBalance: number;
+    /** List truncation info so the UI can warn instead of silently hiding rows. */
+    listMeta?: {
+        shown: number;
+        total: number;
+        limit: number;
+        truncated: boolean;
+    };
 };
 
 /** Paired dialog fields: shared label height + hint/error band so inputs align across columns. */
@@ -118,6 +125,7 @@ export default function TransactionsIndex({
     contacts,
     transactions,
     primaryCashBalance,
+    listMeta,
 }: Props) {
     const [orderedTxs, setOrderedTxs] = useState(transactions);
     const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -1195,6 +1203,14 @@ export default function TransactionsIndex({
                         </DialogContent>
                     </Dialog>
                 </div>
+
+                {listMeta?.truncated ? (
+                    <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                        Showing the most recent {listMeta.shown} of{' '}
+                        {listMeta.total} entries. Use the filters below to narrow
+                        down older transactions.
+                    </div>
+                ) : null}
 
                 <div className="rounded-xl border border-sidebar-border/70 bg-card">
                     {orderedTxs.length === 0 ? (

@@ -23,6 +23,9 @@ use Inertia\Response;
 
 class TransactionController extends Controller
 {
+    /** Max transaction rows (and settlement rows) loaded into the combined list. */
+    private const ROW_LIMIT = 600;
+
     private function settlementStatusFromValues(string $type, float $amount, float $settled): ?string
     {
         if (! in_array($type, ['payable', 'receivable'], true)) {
@@ -225,7 +228,7 @@ class TransactionController extends Controller
             ->orderBy('sort_order')
             ->orderBy('occurred_on')
             ->orderBy('id')
-            ->limit(600)
+            ->limit(self::ROW_LIMIT)
             ->get()
             ->map(function (Transaction $t) {
                 $computedSettled = (float) ($t->settlements_sum ?? 0);
@@ -277,7 +280,7 @@ class TransactionController extends Controller
             ->orderBy('transaction_settlements.sort_order')
             ->orderBy('paid_on')
             ->orderBy('transaction_settlements.id')
-            ->limit(600)
+            ->limit(self::ROW_LIMIT)
             ->get()
             ->map(function (TransactionSettlement $s) {
                 $t = $s->transaction;
@@ -350,6 +353,19 @@ class TransactionController extends Controller
             'settlement' => 'Settlement',
         ]);
 
+        // Surface truncation so the UI can prompt the user to filter instead of
+        // silently hiding rows beyond the load cap.
+        $transactionTotal = Transaction::query()
+            ->where('user_id', $user->id)
+            ->count();
+        $settlementTotal = TransactionSettlement::query()
+            ->where('user_id', $user->id)
+            ->whereHas('transaction', function ($q) use ($user): void {
+                $q->where('transactions.user_id', $user->id)
+                    ->whereIn('type', ['payable', 'receivable']);
+            })
+            ->count();
+
         return Inertia::render('transactions/index', [
             'types' => $types,
             'categoriesByType' => $categories,
@@ -360,6 +376,13 @@ class TransactionController extends Controller
             'defaultRate' => $defaultRate,
             'contacts' => $contacts,
             'transactions' => $rows,
+            'listMeta' => [
+                'shown' => $rows->count(),
+                'total' => $transactionTotal + $settlementTotal,
+                'limit' => self::ROW_LIMIT,
+                'truncated' => $transactionTotal > self::ROW_LIMIT
+                    || $settlementTotal > self::ROW_LIMIT,
+            ],
             'primaryCashBalance' => PrimaryCashBalance::forUserId($user->id),
         ]);
     }
