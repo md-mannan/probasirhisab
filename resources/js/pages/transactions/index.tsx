@@ -2,6 +2,7 @@ import { Form, Head, Link, router } from '@inertiajs/react';
 import {
     Eye,
     GripVertical,
+    Loader2,
     Pencil,
     Plus,
     Printer,
@@ -10,6 +11,7 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -136,6 +138,7 @@ export default function TransactionsIndex({
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [exportSelectKey, setExportSelectKey] = useState(0);
+    const [exporting, setExporting] = useState(false);
 
     // Reset the drag-ordered list whenever the server sends a fresh transactions
     // prop (after a reorder patch or any reload). Done during render via the
@@ -603,24 +606,29 @@ export default function TransactionsIndex({
         );
         const period = periodLabelForExport;
         void (async () => {
-            if (fmt === 'pdf') {
-                await downloadTransactionsPdf(
-                    headers,
-                    body,
-                    'Transactions',
-                    exportFilenameBase,
-                    period,
-                );
-            } else {
-                await downloadTransactionsExcel(
-                    headers,
-                    body,
-                    exportFilenameBase,
-                    period,
-                );
-            }
+            setExporting(true);
 
-            setExportSelectKey((k) => k + 1);
+            try {
+                if (fmt === 'pdf') {
+                    await downloadTransactionsPdf(
+                        headers,
+                        body,
+                        'Transactions',
+                        exportFilenameBase,
+                        period,
+                    );
+                } else {
+                    await downloadTransactionsExcel(
+                        headers,
+                        body,
+                        exportFilenameBase,
+                        period,
+                    );
+                }
+            } finally {
+                setExporting(false);
+                setExportSelectKey((k) => k + 1);
+            }
         })();
     };
 
@@ -1392,6 +1400,7 @@ export default function TransactionsIndex({
                                                     }
                                                 }}
                                                 disabled={
+                                                    exporting ||
                                                     dateRangeInvalid ||
                                                     filteredTxs.length === 0
                                                 }
@@ -1400,7 +1409,14 @@ export default function TransactionsIndex({
                                                     className="h-9 w-[108px] min-w-0 shrink-0 xl:w-[108px] xl:text-xs"
                                                     aria-label="Export transactions"
                                                 >
-                                                    <SelectValue placeholder="Export as…" />
+                                                    {exporting ? (
+                                                        <span className="flex items-center gap-1.5">
+                                                            <Loader2 className="size-3.5 animate-spin" />
+                                                            Exporting…
+                                                        </span>
+                                                    ) : (
+                                                        <SelectValue placeholder="Export as…" />
+                                                    )}
                                                 </SelectTrigger>
                                                 <SelectContent align="end">
                                                     <SelectItem value="pdf">
@@ -1921,36 +1937,35 @@ export default function TransactionsIndex({
                                                                     >
                                                                         <Pencil className="size-4" />
                                                                     </Button>
-                                                                    <Form
-                                                                        action={transactionsDestroy.url(
-                                                                            {
-                                                                                transaction:
-                                                                                    t.transaction_id,
-                                                                            },
-                                                                        )}
-                                                                        method="delete"
-                                                                        options={{
-                                                                            preserveScroll: true,
-                                                                        }}
-                                                                        className="inline"
-                                                                    >
-                                                                        {({
-                                                                            processing,
-                                                                        }) => (
+                                                                    <ConfirmDeleteDialog
+                                                                        title="Delete transaction?"
+                                                                        description="This permanently removes the transaction and its ledger entries. This cannot be undone."
+                                                                        confirmLabel="Delete transaction"
+                                                                        onConfirm={() =>
+                                                                            router.delete(
+                                                                                transactionsDestroy.url(
+                                                                                    {
+                                                                                        transaction:
+                                                                                            t.transaction_id,
+                                                                                    },
+                                                                                ),
+                                                                                {
+                                                                                    preserveScroll: true,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                        trigger={
                                                                             <Button
-                                                                                type="submit"
+                                                                                type="button"
                                                                                 variant="ghost"
                                                                                 size="icon"
                                                                                 aria-label="Delete transaction"
                                                                                 className="text-destructive hover:text-destructive"
-                                                                                disabled={
-                                                                                    processing
-                                                                                }
                                                                             >
                                                                                 <Trash2 className="size-4" />
                                                                             </Button>
-                                                                        )}
-                                                                    </Form>
+                                                                        }
+                                                                    />
                                                                 </>
                                                             )}
                                                             {t.kind ===
@@ -1981,13 +1996,11 @@ export default function TransactionsIndex({
                                                                             <Pencil className="size-4" />
                                                                         </Link>
                                                                     </Button>
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        aria-label="Delete settlement"
-                                                                        className="text-destructive hover:text-destructive"
-                                                                        onClick={() =>
+                                                                    <ConfirmDeleteDialog
+                                                                        title="Delete settlement?"
+                                                                        description="This removes the settlement and updates the settled total. This cannot be undone."
+                                                                        confirmLabel="Delete settlement"
+                                                                        onConfirm={() =>
                                                                             router.delete(
                                                                                 `/transactions/${t.transaction_id}/settlements/${t.settlement_id}`,
                                                                                 {
@@ -1995,9 +2008,18 @@ export default function TransactionsIndex({
                                                                                 },
                                                                             )
                                                                         }
-                                                                    >
-                                                                        <Trash2 className="size-4" />
-                                                                    </Button>
+                                                                        trigger={
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                aria-label="Delete settlement"
+                                                                                className="text-destructive hover:text-destructive"
+                                                                            >
+                                                                                <Trash2 className="size-4" />
+                                                                            </Button>
+                                                                        }
+                                                                    />
                                                                 </>
                                                             ) : null}
                                                         </div>
