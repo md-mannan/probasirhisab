@@ -1509,31 +1509,31 @@ export default function TransactionsIndex({
                                         <table className="w-full min-w-[980px] border-separate border-spacing-0 table-fixed text-sm">
                                         <thead>
                                             <tr className="border-b border-sidebar-border/70 text-left font-medium">
-                                                <th className="sticky top-16 z-20 w-14 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-14 bg-muted px-3 py-3 text-muted-foreground">
                                                     SL
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-28 bg-muted px-3 py-3 text-muted-foreground">
                                                     Date
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-28 bg-muted px-3 py-3 text-muted-foreground">
                                                     Type
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-32 bg-muted px-3 py-3 text-muted-foreground">
                                                     Person
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-28 bg-muted px-3 py-3 text-muted-foreground">
                                                     Category
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-36 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-36 bg-muted px-3 py-3 text-muted-foreground">
                                                     Source
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-32 bg-muted px-3 py-3 text-right text-muted-foreground">
                                                     Amount
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-32 bg-muted px-3 py-3 text-muted-foreground">
                                                     Status
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-24 bg-muted/40 px-3 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-16 z-20 w-24 bg-muted px-3 py-3 text-right text-muted-foreground">
                                                     Actions
                                                 </th>
                                             </tr>
