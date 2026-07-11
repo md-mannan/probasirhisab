@@ -1579,8 +1579,17 @@ export default function TransactionsIndex({
                                                     }}
                                                 >
                                                     <td className="px-3 py-3 align-middle text-muted-foreground">
-                                                        <div className="flex items-center gap-1">
-                                                            <GripVertical className="size-4 text-muted-foreground/70" />
+                                                        <div
+                                                            className="flex items-center gap-1"
+                                                            title="Drag to reorder"
+                                                        >
+                                                            <GripVertical
+                                                                aria-hidden="true"
+                                                                className="size-4 text-muted-foreground/70"
+                                                            />
+                                                            <span className="sr-only">
+                                                                Drag to reorder
+                                                            </span>
                                                             <span className="tabular-nums">
                                                                 {idx + 1}
                                                             </span>
@@ -2443,45 +2452,28 @@ export default function TransactionsIndex({
                                                     className={`${TX_FIELD_COL} md:col-span-2`}
                                                 >
                                                     <div className={TX_LABEL_WRAP}>
-                                                        <Label
-                                                            htmlFor="edit_settled_amount"
-                                                            className="leading-snug"
-                                                        >
-                                                            Settled amount
-                                                            (optional)
+                                                        <Label className="leading-snug">
+                                                            Settled so far
                                                         </Label>
                                                     </div>
-                                                    <Input
-                                                        id="edit_settled_amount"
-                                                        name="settled_amount"
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        placeholder={formatFixed(
-                                                            0,
+                                                    <div className="rounded-md border border-sidebar-border/70 bg-muted/20 px-3 py-2 text-sm tabular-nums">
+                                                        {formatFixed(
+                                                            Math.max(
+                                                                0,
+                                                                Number(
+                                                                    editSettledAmount ||
+                                                                        0,
+                                                                ),
+                                                            ),
                                                             primaryDecimals,
-                                                        )}
-                                                        value={
-                                                            editSettledAmount
-                                                        }
-                                                        onChange={(e) =>
-                                                            setEditSettledAmount(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                    />
-                                                    <div className="mt-0.5 space-y-0.5">
-                                                        <p className="text-xs leading-snug text-muted-foreground">
-                                                            Only for
-                                                            Payable/Receivable
-                                                            (supports partial
-                                                            settle).
-                                                        </p>
-                                                        <InputError
-                                                            message={
-                                                                errors.settled_amount
-                                                            }
-                                                        />
+                                                        )}{' '}
+                                                        {primaryCurrency}
                                                     </div>
+                                                    <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+                                                        Add or edit payments from
+                                                        the transaction’s
+                                                        settlement view.
+                                                    </p>
                                                 </div>
                                             )}
 

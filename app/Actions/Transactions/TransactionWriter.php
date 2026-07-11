@@ -5,6 +5,7 @@ namespace App\Actions\Transactions;
 use App\Models\Category;
 use App\Models\Contact;
 use App\Models\Transaction;
+use App\Models\TransactionSettlement;
 use App\Models\User;
 use App\Services\TransactionLedgerSync;
 use App\Support\Money;
@@ -51,6 +52,7 @@ class TransactionWriter
     private function persist(User $user, array $data, ?Transaction $transaction): Transaction
     {
         $isUpdate = $transaction !== null;
+        $isObligation = in_array($data['type'], ['payable', 'receivable'], true);
 
         $primaryCurrency = $user->primary_currency ?: 'KWD';
         $secondaryCurrency = $user->secondary_currency ?: 'BDT';
@@ -60,7 +62,17 @@ class TransactionWriter
         $category = $this->resolveCategory($user, $data);
         $contactIds = $this->resolveContactIds($user, $data);
 
-        $settledAmount = $this->resolveSettledAmount($data, $primaryAmount);
+        // The opening "already settled" amount is only meaningful when creating an
+        // obligation. On update, settlements are the single source of truth, so the
+        // form value is ignored and we only guard against the total dropping below
+        // what has already been settled.
+        $openingSettled = $isUpdate || ! $isObligation
+            ? null
+            : $this->resolveOpeningSettled($data, $primaryAmount);
+
+        if ($isUpdate && $isObligation) {
+            $this->assertTotalCoversSettlements($transaction, $primaryAmount);
+        }
 
         $this->assertSufficientCash($user, $data['type'], $primaryAmount, $transaction);
 
@@ -70,7 +82,9 @@ class TransactionWriter
             'contact_id' => null, // legacy field; kept nullable
             'amount' => $primaryAmount,
             'secondary_amount' => $secondaryAmount,
-            'settled_amount' => $settledAmount,
+            // settled_amount is always derived from settlement records below; never
+            // taken from the form (which would drop an opening amount on later edits).
+            'settled_amount' => null,
             'currency' => $primaryCurrency,
             'secondary_currency' => $secondaryCurrency,
             'rate' => $rate,
@@ -102,9 +116,71 @@ class TransactionWriter
             );
         }
 
-        $this->ledgerSync->syncForTransaction($transaction);
+        if ($openingSettled !== null && $openingSettled > 0) {
+            $this->createOpeningSettlement($user, $transaction, $openingSettled);
+        }
+
+        // Keep the denormalized column in step with the settlement records so every
+        // surface (list, detail, dashboard, balance sheet) reports the same figure.
+        $this->recomputeSettledAmount($transaction);
+
+        $this->ledgerSync->syncForTransaction($transaction->fresh(['settlements']) ?? $transaction);
 
         return $transaction;
+    }
+
+    /** Recompute settled_amount as the sum of settlement records for the transaction. */
+    private function recomputeSettledAmount(Transaction $transaction): void
+    {
+        if (! in_array($transaction->type, ['payable', 'receivable'], true)) {
+            if ($transaction->settled_amount !== null) {
+                $transaction->settled_amount = null;
+                $transaction->saveOrFail();
+            }
+
+            return;
+        }
+
+        $sum = (float) TransactionSettlement::query()
+            ->where('transaction_id', $transaction->id)
+            ->sum('amount');
+
+        $transaction->settled_amount = $sum;
+        $transaction->saveOrFail();
+    }
+
+    /** Persist the opening amount as a real settlement dated on the transaction date. */
+    private function createOpeningSettlement(User $user, Transaction $transaction, float $amount): void
+    {
+        TransactionSettlement::query()->create([
+            'transaction_id' => $transaction->id,
+            'user_id' => $user->id,
+            'category_id' => $this->defaultSettlementCategoryId($user, $transaction->type),
+            'sort_order' => TransactionListSortOrder::nextForUser($user->id),
+            'amount' => $amount,
+            'paid_on' => $transaction->occurred_on,
+            'source' => null,
+            'note' => null,
+        ]);
+    }
+
+    /** Preferred settle_* category for the obligation type, or null when none exist. */
+    private function defaultSettlementCategoryId(User $user, string $type): ?int
+    {
+        $settlementType = $type === 'payable' ? 'settle_payable' : 'settle_receivable';
+
+        $categories = Category::query()
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
+            ->where('type', $settlementType)
+            ->orderBy('name', 'asc')
+            ->get(['id', 'name']);
+
+        $preferredName = $type === 'payable'
+            ? 'ধারের টাকা ফেরত দিলাম'
+            : 'ধারের পাওনা আদায়';
+
+        return $categories->firstWhere('name', $preferredName)?->id
+            ?? $categories->first()?->id;
     }
 
     /**
@@ -199,27 +275,47 @@ class TransactionWriter
     }
 
     /**
-     * Settled amount only applies to payable/receivable and cannot exceed the total.
+     * The opening "already settled" amount supplied at creation. Applies only to
+     * payable/receivable and cannot exceed the total. Returns the amount (or null).
      *
      * @param  array<string, mixed>  $data
      */
-    private function resolveSettledAmount(array $data, ?float $primaryAmount): ?float
+    private function resolveOpeningSettled(array $data, ?float $primaryAmount): ?float
     {
-        if (! in_array($data['type'], ['payable', 'receivable'], true)) {
+        $settledAmount = array_key_exists('settled_amount', $data) ? $data['settled_amount'] : null;
+
+        if ($settledAmount === null) {
             return null;
         }
 
-        $settledAmount = array_key_exists('settled_amount', $data) ? $data['settled_amount'] : null;
-
         $total = abs((float) ($primaryAmount ?? 0));
-        $settled = (float) ($settledAmount ?? 0);
+        $settled = (float) $settledAmount;
         if (Money::greaterThan($settled, $total)) {
             throw ValidationException::withMessages([
                 'settled_amount' => 'Settled amount cannot be greater than total amount.',
             ]);
         }
 
-        return $settledAmount;
+        return $settled;
+    }
+
+    /**
+     * When editing an obligation, the new total must still cover everything already
+     * settled via settlement records; otherwise the row would become over-settled.
+     */
+    private function assertTotalCoversSettlements(Transaction $transaction, ?float $primaryAmount): void
+    {
+        $alreadySettled = (float) TransactionSettlement::query()
+            ->where('transaction_id', $transaction->id)
+            ->sum('amount');
+
+        $total = abs((float) ($primaryAmount ?? 0));
+
+        if (Money::greaterThan($alreadySettled, $total)) {
+            throw ValidationException::withMessages([
+                'primary_amount' => 'Total cannot be less than the amount already settled.',
+            ]);
+        }
     }
 
     /**
