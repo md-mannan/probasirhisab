@@ -687,7 +687,7 @@ export default function TransactionsIndex({
         <>
             <Head title="Transactions" />
 
-            <div className="space-y-6 py-4 pb-6 sm:py-6">
+            <div className="flex min-h-0 flex-1 flex-col space-y-6 py-4 pb-6 sm:py-6">
                 <div className="mb-0 flex flex-wrap items-start justify-between gap-4">
                     <Heading
                         title="Transactions"
@@ -1219,13 +1219,13 @@ export default function TransactionsIndex({
                     </div>
                 ) : null}
 
-                <div className="rounded-xl border border-sidebar-border/70 bg-card">
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-card">
                     {orderedTxs.length === 0 ? (
                         <div className="px-4 py-10 text-center text-sm text-muted-foreground">
                             No transactions yet.
                         </div>
                     ) : (
-                        <div className="w-full min-w-0">
+                        <div className="flex w-full min-w-0 min-h-0 flex-1 flex-col">
                             <div className="space-y-2 border-b border-sidebar-border/70 p-4">
                                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid xl:grid-cols-[minmax(140px,360px)_112px_126px_112px_128px_128px_minmax(148px,156px)]">
                                     <div className="w-full max-w-[360px] min-w-0">
@@ -1504,36 +1504,36 @@ export default function TransactionsIndex({
                                     )}
                                 </div>
                             ) : (
-                                <div className="-mx-4 overflow-x-auto overflow-y-visible px-4">
+                                <div className="-mx-4 min-h-0 min-w-0 flex-1 overflow-auto px-4">
                                     <TooltipProvider delayDuration={150}>
-                                        <table className="w-full min-w-[980px] border-separate border-spacing-0 table-fixed text-sm">
+                                        <table className="w-full min-w-[980px] border-separate border-spacing-0 text-sm table-fixed">
                                         <thead>
                                             <tr className="border-b border-sidebar-border/70 text-left font-medium">
-                                                <th className="sticky top-16 z-20 w-14 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-14 bg-muted px-3 py-3 text-muted-foreground">
                                                     SL
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-28 bg-muted px-3 py-3 text-muted-foreground">
                                                     Date
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-28 bg-muted px-3 py-3 text-muted-foreground">
                                                     Type
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-32 bg-muted px-3 py-3 text-muted-foreground">
                                                     Person
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-28 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-28 bg-muted px-3 py-3 text-muted-foreground">
                                                     Category
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-36 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-36 bg-muted px-3 py-3 text-muted-foreground">
                                                     Source
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-32 bg-muted px-3 py-3 text-right text-muted-foreground">
                                                     Amount
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-32 bg-muted/40 px-3 py-3 text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-32 bg-muted px-3 py-3 text-muted-foreground">
                                                     Status
                                                 </th>
-                                                <th className="sticky top-16 z-20 w-24 bg-muted/40 px-3 py-3 text-right text-muted-foreground backdrop-blur supports-backdrop-filter:bg-muted/30">
+                                                <th className="sticky top-0 z-20 w-24 bg-muted px-3 py-3 text-right text-muted-foreground">
                                                     Actions
                                                 </th>
                                             </tr>

@@ -152,8 +152,8 @@ export default function CategoriesIndex({ types, categories }: Props) {
                     </Dialog>
                 </div>
 
-                <div className="rounded-xl border border-sidebar-border/70">
-                    <div className="sticky top-16 z-20 grid grid-cols-12 gap-2 border-b border-sidebar-border/70 bg-muted/40 px-4 py-2 text-sm font-medium backdrop-blur supports-backdrop-filter:bg-muted/30">
+                <div className="max-h-[calc(100dvh-13rem)] overflow-auto rounded-xl border border-sidebar-border/70">
+                    <div className="sticky top-0 z-20 grid grid-cols-12 gap-2 border-b border-sidebar-border/70 bg-muted px-4 py-2 text-sm font-medium">
                         <div className="col-span-4">Name</div>
                         <div className="col-span-4">Type</div>
                         <div className="col-span-4 text-right">Actions</div>

@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Contact;
 use App\Models\Transaction;
+use App\Services\ContactSync;
 use App\Support\Currency;
 use App\Support\SharedCatalog;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -14,15 +14,19 @@ use Inertia\Response;
 
 class ContactController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, ContactSync $sync): Response
     {
         $user = $request->user();
+
+        // People are sourced from system users: ensure one user-backed contact each.
+        $sync->syncForOwner($user);
 
         $primaryCurrency = $user->primary_currency ?: 'KWD';
         $secondaryCurrency = $user->secondary_currency ?: 'BDT';
 
         $contacts = Contact::query()
             ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
+            ->whereNotNull('member_user_id')
             ->orderBy('name', 'asc')
             ->get(['id', 'name', 'created_at']);
 
@@ -144,65 +148,5 @@ class ContactController extends Controller
             ],
             'transactions' => $transactions,
         ]);
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        $user = $request->user();
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
-
-        Contact::query()->create([
-            'user_id' => $user->id,
-            'name' => trim($data['name']),
-        ]);
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Person created.')]);
-
-        return back();
-    }
-
-    public function update(Request $request, Contact $contact): RedirectResponse
-    {
-        if (! SharedCatalog::canAccessContact($request->user(), $contact)) {
-            abort(403);
-        }
-
-        if (! SharedCatalog::canMutateContact($request->user(), $contact)) {
-            abort(403);
-        }
-
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
-
-        $contact->fill([
-            'name' => trim($data['name']),
-        ]);
-
-        $contact->saveOrFail();
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Person updated.')]);
-
-        return back();
-    }
-
-    public function destroy(Request $request, Contact $contact): RedirectResponse
-    {
-        if (! SharedCatalog::canAccessContact($request->user(), $contact)) {
-            abort(403);
-        }
-
-        if (! SharedCatalog::canMutateContact($request->user(), $contact)) {
-            abort(403);
-        }
-
-        $contact->deleteOrFail();
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Person deleted.')]);
-
-        return back();
     }
 }

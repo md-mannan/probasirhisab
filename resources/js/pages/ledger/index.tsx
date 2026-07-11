@@ -475,7 +475,7 @@ export default function LedgerIndex({
                                     )}
                                 </div>
                             ) : (
-                                <div className="-mx-4 min-w-0 overflow-x-auto overflow-y-visible px-4 rounded-b-xl">
+                                <div className="-mx-4 max-h-[calc(100dvh-13rem)] min-w-0 overflow-auto rounded-b-xl px-4">
                                     <TooltipProvider delayDuration={150}>
                                         <table className="w-full min-w-[980px] table-fixed border-separate border-spacing-0 text-sm leading-snug font-normal">
                                             <colgroup>
@@ -491,31 +491,31 @@ export default function LedgerIndex({
                                             </colgroup>
                                             <thead>
                                                 <tr className="border-b border-sidebar-border/70 text-left font-normal">
-                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-0 z-20 bg-muted px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase">
                                                         SL
                                                     </th>
-                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 pr-4 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-0 z-20 bg-muted px-3 py-3 pr-4 text-xs font-normal tracking-wide text-muted-foreground uppercase">
                                                         Date
                                                     </th>
-                                                    <th className="sticky top-16 z-20 border-l border-sidebar-border/60 bg-muted/50 px-3 py-3 pl-4 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-0 z-20 border-l border-sidebar-border/60 bg-muted px-3 py-3 pl-4 text-xs font-normal tracking-wide text-muted-foreground uppercase">
                                                         Type
                                                     </th>
-                                                    <th className="sticky top-16 z-20 min-w-0 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-0 z-20 min-w-0 bg-muted px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase">
                                                         Description
                                                     </th>
-                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-0 z-20 bg-muted px-3 py-3 text-xs font-normal tracking-wide text-muted-foreground uppercase">
                                                         Category
                                                     </th>
-                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-0 z-20 bg-muted px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase">
                                                         Debit
                                                     </th>
-                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-0 z-20 bg-muted px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase">
                                                         Credit
                                                     </th>
-                                                    <th className="sticky top-16 z-20 bg-muted/50 px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40">
+                                                    <th className="sticky top-0 z-20 bg-muted px-3 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase">
                                                         Balance
                                                     </th>
-                                                    <th className="sticky top-16 z-20 bg-muted/50 px-2 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase backdrop-blur supports-backdrop-filter:bg-muted/40"></th>
+                                                    <th className="sticky top-0 z-20 bg-muted px-2 py-3 text-right text-xs font-normal tracking-wide text-muted-foreground uppercase"></th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-sidebar-border/60">
