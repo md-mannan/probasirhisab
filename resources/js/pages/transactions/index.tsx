@@ -137,9 +137,16 @@ export default function TransactionsIndex({
     const [dateTo, setDateTo] = useState('');
     const [exportSelectKey, setExportSelectKey] = useState(0);
 
-    useEffect(() => {
+    // Reset the drag-ordered list whenever the server sends a fresh transactions
+    // prop (after a reorder patch or any reload). Done during render via the
+    // documented "adjust state when a prop changes" pattern instead of an effect,
+    // so there is no extra commit/cascading render.
+    const [prevTransactions, setPrevTransactions] = useState(transactions);
+
+    if (transactions !== prevTransactions) {
+        setPrevTransactions(transactions);
         setOrderedTxs(transactions);
-    }, [transactions]);
+    }
 
     const persistRowOrder = (ids: string[]) => {
         router.patch(
@@ -221,7 +228,7 @@ export default function TransactionsIndex({
 
     const openCreate = (type: string) => {
         setCreateType(type);
-        setCategoryId('');
+        setCategoryId(pickCategoryId(categoriesByType[type] ?? [], ''));
         setPrimaryAmount('');
         setSecondaryAmount('');
         setRate(defaultRate ?? '');
@@ -279,6 +286,9 @@ export default function TransactionsIndex({
         setEditOpen(true);
     };
 
+    // Deep-link support: on mount, read ?edit=<id> from the URL (an external
+    // system) and open that transaction's edit dialog, then strip the param. This
+    // is a legitimate mount-time effect syncing with the URL.
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const editId = params.get('edit');
@@ -301,6 +311,9 @@ export default function TransactionsIndex({
             return;
         }
 
+        // Opening from the URL is the intended side effect here, so the
+        // set-state-in-effect heuristic is suppressed for this one call.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         openEdit(tx);
 
         // Clean the URL after opening to avoid re-opening after save/back/refresh.
@@ -317,40 +330,67 @@ export default function TransactionsIndex({
     const categories = categoriesByType[createType] ?? [];
     const editCategories = categoriesByType[editType] ?? [];
 
-    useEffect(() => {
-        if (!createOpen) {
-            return;
+    // Keep the current selection if still valid, otherwise default to the first
+    // category (or empty when the type has none). Computed at the event that changes
+    // the list rather than in an effect, so there is no cascading re-render.
+    const pickCategoryId = (
+        list: Array<{ id: number }>,
+        currentId: string,
+    ): string => {
+        if (list.length === 0) {
+            return '';
         }
 
-        if (categories.length === 0) {
-            setCategoryId('');
-
-            return;
+        if (list.some((c) => String(c.id) === currentId)) {
+            return currentId;
         }
 
-        if (!categories.some((c) => String(c.id) === categoryId)) {
-            setCategoryId(String(categories[0].id));
-        }
-    }, [categories, categoryId, createOpen]);
+        return String(list[0].id);
+    };
 
-    useEffect(() => {
-        if (!editOpen) {
-            return;
-        }
-
-        if (editCategories.length === 0) {
-            setEditCategoryId('');
-
-            return;
-        }
-
-        if (!editCategories.some((c) => String(c.id) === editCategoryId)) {
-            setEditCategoryId(String(editCategories[0].id));
-        }
-    }, [editCategories, editCategoryId, editOpen]);
+    const changeEditType = (type: string) => {
+        setEditType(type);
+        setEditCategoryId(
+            pickCategoryId(categoriesByType[type] ?? [], ''),
+        );
+    };
 
     const parsedRate = Number(rate);
     const canCalc = Number.isFinite(parsedRate) && parsedRate > 0;
+
+    // Recompute the paired amount from a new FX rate. Runs at the rate input's
+    // onChange (an event) rather than in an effect, avoiding a cascading render.
+    const applyRateToCreate = (nextRate: string) => {
+        setRate(nextRate);
+
+        const r = Number(nextRate);
+
+        if (!Number.isFinite(r) || r <= 0) {
+            return;
+        }
+
+        if (lastEdited === 'primary') {
+            if (primaryAmount === '') {
+                return;
+            }
+
+            const p = Number(primaryAmount);
+
+            if (Number.isFinite(p)) {
+                setSecondaryAmount(formatFixed(p * r, secondaryDecimals));
+            }
+        } else {
+            if (secondaryAmount === '') {
+                return;
+            }
+
+            const s = Number(secondaryAmount);
+
+            if (Number.isFinite(s)) {
+                setPrimaryAmount(formatFixed(s / r, primaryDecimals));
+            }
+        }
+    };
 
     const typeMeta = (type: string) => {
         if (type === 'income') {
@@ -597,86 +637,40 @@ export default function TransactionsIndex({
         );
     };
 
-    useEffect(() => {
-        if (!createOpen) {
-            return;
-        }
-
-        if (!canCalc) {
-            return;
-        }
-
-        if (lastEdited === 'primary') {
-            const p = Number(primaryAmount);
-
-            if (!Number.isFinite(p)) {
-                return;
-            }
-
-            if (primaryAmount === '') {
-                return;
-            }
-
-            const s = p * parsedRate;
-            setSecondaryAmount(formatFixed(s, secondaryDecimals));
-        } else {
-            const s = Number(secondaryAmount);
-
-            if (!Number.isFinite(s)) {
-                return;
-            }
-
-            if (secondaryAmount === '') {
-                return;
-            }
-
-            const p = s / parsedRate;
-            setPrimaryAmount(formatFixed(p, primaryDecimals));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [rate]);
-
     const editParsedRate = Number(editRate);
     const editCanCalc = Number.isFinite(editParsedRate) && editParsedRate > 0;
 
-    useEffect(() => {
-        if (!editOpen) {
-            return;
-        }
+    const applyRateToEdit = (nextRate: string) => {
+        setEditRate(nextRate);
 
-        if (!editCanCalc) {
+        const r = Number(nextRate);
+
+        if (!Number.isFinite(r) || r <= 0) {
             return;
         }
 
         if (editLastEdited === 'primary') {
-            const p = Number(editPrimaryAmount);
-
-            if (!Number.isFinite(p)) {
-                return;
-            }
-
             if (editPrimaryAmount === '') {
                 return;
             }
 
-            const s = p * editParsedRate;
-            setEditSecondaryAmount(formatFixed(s, secondaryDecimals));
-        } else {
-            const s = Number(editSecondaryAmount);
+            const p = Number(editPrimaryAmount);
 
-            if (!Number.isFinite(s)) {
-                return;
+            if (Number.isFinite(p)) {
+                setEditSecondaryAmount(formatFixed(p * r, secondaryDecimals));
             }
-
+        } else {
             if (editSecondaryAmount === '') {
                 return;
             }
 
-            const p = s / editParsedRate;
-            setEditPrimaryAmount(formatFixed(p, primaryDecimals));
+            const s = Number(editSecondaryAmount);
+
+            if (Number.isFinite(s)) {
+                setEditPrimaryAmount(formatFixed(s / r, primaryDecimals));
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [editRate]);
+    };
 
     return (
         <>
@@ -1043,7 +1037,9 @@ export default function TransactionsIndex({
                                                     inputMode="decimal"
                                                     value={rate}
                                                     onChange={(e) =>
-                                                        setRate(e.target.value)
+                                                        applyRateToCreate(
+                                                            e.target.value,
+                                                        )
                                                     }
                                                 />
                                                 <div className="mt-0.5 space-y-0.5">
@@ -2343,7 +2339,7 @@ export default function TransactionsIndex({
                                                     inputMode="decimal"
                                                     value={editRate}
                                                     onChange={(e) =>
-                                                        setEditRate(
+                                                        applyRateToEdit(
                                                             e.target.value,
                                                         )
                                                     }
@@ -2417,7 +2413,7 @@ export default function TransactionsIndex({
                                                 </div>
                                                 <Select
                                                     value={editType}
-                                                    onValueChange={setEditType}
+                                                    onValueChange={changeEditType}
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue placeholder="Select type" />
