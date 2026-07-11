@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'user_id',
+    'member_user_id',
     'name',
 ])]
 class Contact extends Model
@@ -26,12 +27,19 @@ class Contact extends Model
     {
         return [
             'user_id' => 'integer',
+            'member_user_id' => 'integer',
         ];
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** The system user this contact represents (People are sourced from users). */
+    public function member(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'member_user_id');
     }
 
     public function transactions(): HasMany

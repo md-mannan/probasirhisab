@@ -39,11 +39,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
     Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
+    // People are sourced from system users; the list is read-only (no manual add/edit/delete).
     Route::get('contacts', [ContactController::class, 'index'])->name('contacts.index');
     Route::get('contacts/{contact}', [ContactController::class, 'show'])->name('contacts.show');
-    Route::post('contacts', [ContactController::class, 'store'])->name('contacts.store');
-    Route::patch('contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
-    Route::delete('contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy');
 
     Route::get('transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::patch('transactions/reorder', [TransactionController::class, 'reorder'])->name('transactions.reorder');

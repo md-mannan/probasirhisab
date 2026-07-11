@@ -1,27 +1,8 @@
-import { Form, Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { ConfirmDeleteDialog } from '@/components/confirm-delete-dialog';
+import { Head, Link } from '@inertiajs/react';
 import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    destroy as contactsDestroy,
     index as contactsIndex,
     show as contactsShow,
-    store as contactsStore,
-    update as contactsUpdate,
 } from '@/routes/contacts';
 
 type Props = {
@@ -53,82 +34,23 @@ export default function ContactsIndex({
         return value.toFixed(decimals);
     };
 
-    const [createOpen, setCreateOpen] = useState(false);
-
-    const [editOpen, setEditOpen] = useState(false);
-    const [editId, setEditId] = useState<number | null>(null);
-    const [editName, setEditName] = useState('');
-
-    const openEdit = (c: Props['contacts'][number]) => {
-        setEditId(c.id);
-        setEditName(c.name);
-        setEditOpen(true);
-    };
-
     return (
         <>
             <Head title="People" />
 
             <div className="min-w-0 space-y-6 py-4 pb-6 sm:py-6">
-                <div className="mb-0 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0 flex-1">
-                        <Heading
-                            title="People"
-                            description="Income by person + payable/receivable outstanding (expenses are handled globally)"
-                        />
-                    </div>
-
-                    <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                        <DialogTrigger asChild>
-                            <Button className="w-full shrink-0 sm:w-auto">
-                                <Plus className="mr-2 size-4 shrink-0" />
-                                Add person
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Add person</DialogTitle>
-                            </DialogHeader>
-
-                            <Form
-                                action={contactsStore.url()}
-                                method="post"
-                                options={{ preserveScroll: true }}
-                                className="grid gap-4"
-                                onSuccess={() => setCreateOpen(false)}
-                            >
-                                {({ processing, errors }) => (
-                                    <>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="name">Name</Label>
-                                            <Input
-                                                id="name"
-                                                name="name"
-                                                required
-                                                placeholder="Person name"
-                                            />
-                                            <InputError message={errors.name} />
-                                        </div>
-
-                                        <DialogFooter>
-                                            <Button
-                                                type="submit"
-                                                disabled={processing}
-                                            >
-                                                Save
-                                            </Button>
-                                        </DialogFooter>
-                                    </>
-                                )}
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
+                <div className="mb-0 min-w-0">
+                    <Heading
+                        title="People"
+                        description="Everyone on this workspace. Income by person + payable/receivable outstanding (expenses are handled globally)."
+                    />
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70 bg-card">
                     {contacts.length === 0 ? (
                         <div className="px-4 py-10 text-center text-sm text-muted-foreground">
-                            No people yet. Add your brothers first.
+                            No people yet. Add users from Settings → Users and
+                            they will appear here.
                         </div>
                     ) : (
                         <div className="max-h-[calc(100dvh-13rem)] overflow-auto">
@@ -234,60 +156,14 @@ export default function ContactsIndex({
                                                 </td>
                                                 <td className="px-4 py-3 align-middle">
                                                     <div className="flex justify-end gap-1">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            aria-label="Edit person"
-                                                            onClick={() =>
-                                                                openEdit(c)
-                                                            }
+                                                        <Link
+                                                            href={contactsShow({
+                                                                contact: c.id,
+                                                            })}
+                                                            className="text-sm font-medium text-primary hover:underline"
                                                         >
-                                                            <Pencil className="size-4" />
-                                                        </Button>
-
-                                                        <ConfirmDeleteDialog
-                                                            title="Delete person?"
-                                                            description={
-                                                                <>
-                                                                    “{c.name}”
-                                                                    will be
-                                                                    removed.
-                                                                    Transactions
-                                                                    linked to
-                                                                    this person
-                                                                    keep their
-                                                                    record. This
-                                                                    cannot be
-                                                                    undone.
-                                                                </>
-                                                            }
-                                                            confirmLabel="Delete person"
-                                                            onConfirm={() =>
-                                                                router.delete(
-                                                                    contactsDestroy.url(
-                                                                        {
-                                                                            contact:
-                                                                                c.id,
-                                                                        },
-                                                                    ),
-                                                                    {
-                                                                        preserveScroll: true,
-                                                                    },
-                                                                )
-                                                            }
-                                                            trigger={
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    aria-label="Delete person"
-                                                                    className="text-destructive hover:text-destructive"
-                                                                >
-                                                                    <Trash2 className="size-4" />
-                                                                </Button>
-                                                            }
-                                                        />
+                                                            View
+                                                        </Link>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -298,56 +174,6 @@ export default function ContactsIndex({
                         </div>
                     )}
                 </div>
-
-                <Dialog open={editOpen} onOpenChange={setEditOpen}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Edit person</DialogTitle>
-                            <DialogDescription>
-                                Update the name.
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        {editId !== null && (
-                            <Form
-                                action={contactsUpdate.url({ contact: editId })}
-                                method="patch"
-                                options={{ preserveScroll: true }}
-                                className="grid gap-4"
-                                onSuccess={() => setEditOpen(false)}
-                            >
-                                {({ processing, errors }) => (
-                                    <>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="edit_name">
-                                                Name
-                                            </Label>
-                                            <Input
-                                                id="edit_name"
-                                                name="name"
-                                                value={editName}
-                                                onChange={(e) =>
-                                                    setEditName(e.target.value)
-                                                }
-                                                required
-                                            />
-                                            <InputError message={errors.name} />
-                                        </div>
-
-                                        <DialogFooter>
-                                            <Button
-                                                type="submit"
-                                                disabled={processing}
-                                            >
-                                                Save
-                                            </Button>
-                                        </DialogFooter>
-                                    </>
-                                )}
-                            </Form>
-                        )}
-                    </DialogContent>
-                </Dialog>
             </div>
         </>
     );
