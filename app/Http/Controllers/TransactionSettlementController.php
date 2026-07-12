@@ -11,6 +11,8 @@ use App\Support\SharedCatalog;
 use App\Support\TransactionListSortOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class TransactionSettlementController extends Controller
@@ -75,24 +77,49 @@ class TransactionSettlementController extends Controller
             }
         }
 
-        $settlement = TransactionSettlement::query()->create([
-            'transaction_id' => $transaction->id,
-            'user_id' => $user->id,
-            'category_id' => $category->id,
-            'sort_order' => TransactionListSortOrder::nextForUser($user->id),
-            'amount' => $add,
-            'paid_on' => $data['paid_on'],
-            'source' => ($data['source'] ?? null) ? trim($data['source']) : null,
-            'note' => ($data['note'] ?? null) ? trim($data['note']) : null,
-        ]);
+        // Create the settlement, recompute the denormalized total, and re-sync the
+        // ledger atomically. The obligation row is locked first so the guards above
+        // can't be raced by a concurrent settlement (which would over-settle or
+        // overspend cash). Guard failures throw ValidationException → same error
+        // bag Inertia rendered before, and roll the whole thing back.
+        DB::transaction(function () use ($user, $transaction, $category, $data, $add) {
+            $locked = Transaction::query()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
 
-        $transaction->settled_amount = TransactionSettlement::query()
-            ->where('transaction_id', $transaction->id)
-            ->where('user_id', $user->id)
-            ->sum('amount');
-        $transaction->saveOrFail();
+            $total = abs((float) $locked->amount);
+            $current = (float) ($locked->settled_amount ?? 0);
 
-        app(TransactionLedgerSync::class)->syncForTransaction($transaction->fresh(['settlements']));
+            if ($current + $add > $total + 0.0000001) {
+                throw ValidationException::withMessages(['amount' => 'Payment exceeds remaining amount.']);
+            }
+
+            if ($locked->type === 'payable') {
+                $cash = PrimaryCashBalance::forUserId($user->id);
+                if ($cash + 0.0000001 < $add) {
+                    throw ValidationException::withMessages([
+                        'amount' => __('You do not have enough cash to record this payment.'),
+                    ]);
+                }
+            }
+
+            TransactionSettlement::query()->create([
+                'transaction_id' => $locked->id,
+                'user_id' => $user->id,
+                'category_id' => $category->id,
+                'sort_order' => TransactionListSortOrder::nextForUser($user->id),
+                'amount' => $add,
+                'paid_on' => $data['paid_on'],
+                'source' => ($data['source'] ?? null) ? trim($data['source']) : null,
+                'note' => ($data['note'] ?? null) ? trim($data['note']) : null,
+            ]);
+
+            $locked->settled_amount = TransactionSettlement::query()
+                ->where('transaction_id', $locked->id)
+                ->where('user_id', $user->id)
+                ->sum('amount');
+            $locked->saveOrFail();
+
+            app(TransactionLedgerSync::class)->syncForTransaction($locked->fresh(['settlements']));
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settlement added.')]);
 
@@ -154,22 +181,47 @@ class TransactionSettlementController extends Controller
             }
         }
 
-        $settlement->fill([
-            'category_id' => $category->id,
-            'amount' => $nextAmount,
-            'paid_on' => $data['paid_on'],
-            'source' => ($data['source'] ?? null) ? trim($data['source']) : null,
-            'note' => ($data['note'] ?? null) ? trim($data['note']) : null,
-        ]);
-        $settlement->saveOrFail();
+        // Update the settlement, recompute the total, and re-sync the ledger atomically
+        // under a row lock (see store() for rationale).
+        DB::transaction(function () use ($user, $transaction, $settlement, $category, $data, $nextAmount) {
+            $locked = Transaction::query()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
 
-        $transaction->settled_amount = TransactionSettlement::query()
-            ->where('transaction_id', $transaction->id)
-            ->where('user_id', $user->id)
-            ->sum('amount');
-        $transaction->saveOrFail();
+            $total = abs((float) $locked->amount);
+            $otherSum = (float) $locked->settlements()
+                ->where('id', '!=', $settlement->id)
+                ->sum('amount');
 
-        app(TransactionLedgerSync::class)->syncForTransaction($transaction->fresh(['settlements']));
+            if ($otherSum + $nextAmount > $total + 0.0000001) {
+                throw ValidationException::withMessages(['amount' => 'Payment exceeds remaining amount.']);
+            }
+
+            if ($locked->type === 'payable') {
+                $cash = PrimaryCashBalance::forUserId($user->id);
+                $available = $cash + (float) $settlement->amount;
+                if ($available + 0.0000001 < $nextAmount) {
+                    throw ValidationException::withMessages([
+                        'amount' => __('You do not have enough cash to record this payment.'),
+                    ]);
+                }
+            }
+
+            $settlement->fill([
+                'category_id' => $category->id,
+                'amount' => $nextAmount,
+                'paid_on' => $data['paid_on'],
+                'source' => ($data['source'] ?? null) ? trim($data['source']) : null,
+                'note' => ($data['note'] ?? null) ? trim($data['note']) : null,
+            ]);
+            $settlement->saveOrFail();
+
+            $locked->settled_amount = TransactionSettlement::query()
+                ->where('transaction_id', $locked->id)
+                ->where('user_id', $user->id)
+                ->sum('amount');
+            $locked->saveOrFail();
+
+            app(TransactionLedgerSync::class)->syncForTransaction($locked->fresh(['settlements']));
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settlement updated.')]);
 
@@ -188,15 +240,20 @@ class TransactionSettlementController extends Controller
             abort(404);
         }
 
-        $settlement->deleteOrFail();
+        // Delete the settlement, recompute the total, and re-sync the ledger atomically.
+        DB::transaction(function () use ($user, $transaction, $settlement) {
+            $locked = Transaction::query()->whereKey($transaction->id)->lockForUpdate()->firstOrFail();
 
-        $transaction->settled_amount = TransactionSettlement::query()
-            ->where('transaction_id', $transaction->id)
-            ->where('user_id', $user->id)
-            ->sum('amount');
-        $transaction->saveOrFail();
+            $settlement->deleteOrFail();
 
-        app(TransactionLedgerSync::class)->syncForTransaction($transaction->fresh(['settlements']));
+            $locked->settled_amount = TransactionSettlement::query()
+                ->where('transaction_id', $locked->id)
+                ->where('user_id', $user->id)
+                ->sum('amount');
+            $locked->saveOrFail();
+
+            app(TransactionLedgerSync::class)->syncForTransaction($locked->fresh(['settlements']));
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Settlement removed.')]);
 

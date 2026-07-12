@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\LedgerEntry;
 use App\Models\Transaction;
 use App\Models\TransactionSettlement;
+use App\Support\Money;
 use Illuminate\Support\Collection;
 
 class TransactionLedgerSync
@@ -103,11 +104,15 @@ class TransactionLedgerSync
         foreach ($settlements as $s) {
             $payPrimary = abs((float) $s->amount);
 
-            $paySecondary = null;
-            if ($transaction->secondary_amount !== null && (float) $transaction->amount !== 0.0) {
-                $ratio = (float) $transaction->secondary_amount / (float) $transaction->amount;
-                $paySecondary = $payPrimary * $ratio;
-            }
+            // Single canonical derivation: this settlement's share of the secondary
+            // amount, from the booked ratio, rounded to the secondary currency.
+            $paySecondary = Money::deriveSecondary(
+                $payPrimary,
+                $transaction->amount === null ? null : (float) $transaction->amount,
+                $transaction->secondary_amount === null ? null : (float) $transaction->secondary_amount,
+                (string) $transaction->secondary_currency,
+            );
+            $paySecondary = $paySecondary === null ? null : abs($paySecondary);
 
             $settleDebitPrimary = 0.0;
             $settleCreditPrimary = 0.0;

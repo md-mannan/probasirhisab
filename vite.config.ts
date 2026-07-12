@@ -7,22 +7,25 @@ import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig } from 'vite';
 
 /**
- * Name a built chunk after its source file (path under resources/js), with no content
- * hash — so the output is `assets/pages/contacts/index.js` instead of `index-CuUOa15I.js`.
- * Shared/vendor chunks have no source file; they fall back to their chunk name.
+ * Name a built JS chunk/entry after its source file (path under resources/js), with no
+ * content hash — so output is `assets/app.js`, `assets/pages/contacts/index.js` instead
+ * of `app-CuUOa15I.js`. Shared/vendor chunks (no source facade) fall back to their name.
+ * Everything lives under `assets/js/` so a JS stem can never collide with a same-named
+ * non-JS asset entry (e.g. the `app.css` entry), which would otherwise bump `app.js`
+ * to `app2.js`.
  */
-function chunkNameFromSource(chunkInfo: { facadeModuleId?: string | null }): string {
+function jsNameFromSource(chunkInfo: { facadeModuleId?: string | null; name: string }): string {
     const id = chunkInfo.facadeModuleId;
     if (id) {
         const match = id
             .replace(/\\/g, '/')
             .match(/resources\/js\/(.+)\.(?:tsx|ts|jsx|js)$/);
         if (match) {
-            return `assets/${match[1]}.js`;
+            return `assets/js/${match[1]}.js`;
         }
     }
 
-    return 'assets/[name].js';
+    return `assets/js/${chunkInfo.name}.js`;
 }
 
 export default defineConfig({
@@ -40,11 +43,22 @@ export default defineConfig({
         chunkSizeWarningLimit: 1200,
         rollupOptions: {
             output: {
-                // Name built files after their source (no content hash) so output is
-                // stable and recognizable, e.g. `app.js` / `pages/contacts/index.js`.
-                entryFileNames: 'assets/[name].js',
-                chunkFileNames: chunkNameFromSource,
-                assetFileNames: 'assets/[name][extname]',
+                // JS entries/chunks are named after their source file with no content
+                // hash — `assets/js/app.js`, `assets/js/pages/contacts/index.js`.
+                entryFileNames: jsNameFromSource,
+                chunkFileNames: jsNameFromSource,
+                // Rolldown dedups output by basename stem (ignoring extension), so the
+                // `app.css` entry would otherwise reserve `app` and bump the JS entry to
+                // `app2.js`. Route the app stylesheet to a distinct `styles` basename;
+                // other assets keep their name + a cache-busting hash.
+                assetFileNames(assetInfo) {
+                    const name = assetInfo.names?.[0] ?? '';
+                    if (/\.css$/.test(name)) {
+                        return 'assets/css/styles-[hash][extname]';
+                    }
+
+                    return 'assets/[name]-[hash][extname]';
+                },
                 manualChunks(id) {
                     if (id.includes('node_modules/@inertiajs/')) {
                         return 'vendor-inertia';

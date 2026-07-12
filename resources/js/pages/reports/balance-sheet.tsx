@@ -328,12 +328,24 @@ export default function BalanceSheet({
                                                 <div className="mt-1 text-2xl font-semibold tabular-nums">
                                                     {format(totals.assets.primary, primaryDecimals)} {primaryCurrency}
                                                 </div>
+                                                {totals.assets.secondary !== null && (
+                                                    <div className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                                                        {formatSecondary(totals.assets.secondary, secondaryDecimals)}{' '}
+                                                        {secondaryCurrency}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
                                                 <div className="text-xs text-muted-foreground">Total liabilities</div>
                                                 <div className="mt-1 text-2xl font-semibold tabular-nums">
                                                     {format(totals.liabilities.primary, primaryDecimals)} {primaryCurrency}
                                                 </div>
+                                                {totals.liabilities.secondary !== null && (
+                                                    <div className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                                                        {formatSecondary(totals.liabilities.secondary, secondaryDecimals)}{' '}
+                                                        {secondaryCurrency}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </CardContent>

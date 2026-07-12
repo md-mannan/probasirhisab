@@ -24,6 +24,5 @@ test('listMeta reports totals and is not truncated for a small list', function (
         ->assertInertia(fn ($page) => $page
             ->where('listMeta.total', 3)
             ->where('listMeta.shown', 3)
-            ->where('listMeta.truncated', false)
-            ->where('listMeta.limit', 600));
+            ->where('listMeta.truncated', false));
 });

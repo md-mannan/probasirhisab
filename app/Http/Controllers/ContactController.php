@@ -16,6 +16,9 @@ use Inertia\Response;
 
 class ContactController extends Controller
 {
+    /** Max transactions shown on a person's statement (summary totals are unbounded). */
+    private const ROW_LIMIT = 500000;
+
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -63,37 +66,50 @@ class ContactController extends Controller
         $primaryCurrency = $user->primary_currency ?: 'KWD';
         $secondaryCurrency = $user->secondary_currency ?: 'BDT';
 
-        $transactions = Transaction::query()
+        $baseQuery = fn () => Transaction::query()
             ->where('user_id', $user->id)
             ->whereHas('contacts', fn ($q) => $q->where('contacts.id', $contact->id))
-            ->whereIn('type', ['income', 'payable', 'receivable'])
-            ->with(['category:id,name,type', 'contacts:id,name'])
-            ->orderBy('occurred_on', 'desc')
-            ->orderBy('id', 'desc')
-            ->limit(500)
-            ->get();
+            ->whereIn('type', ['income', 'payable', 'receivable']);
 
         // Person statement summary (outstanding only): what they owe you vs. you owe
-        // them. Shared (group) obligations belong to the group as a whole, so they are
+        // them. Computed over ALL of the person's transactions — never the capped
+        // display slice — so the outstanding balance is correct regardless of history
+        // size. Shared (group) obligations belong to the group as a whole, so they are
         // excluded here — consistent with the People overview, where a group is its own
         // separate row rather than being counted against each member.
         $assets = 0.0;
         $liabilities = 0.0;
         $income = 0.0;
-        foreach ($transactions as $t) {
-            if ($t->contacts->count() >= 2) {
-                continue; // group obligation — not part of this person's individual balance
-            }
-            $abs = abs((float) $t->amount);
-            $remaining = max(0.0, $abs - max(0.0, min($abs, (float) ($t->settled_amount ?? 0))));
-            if ($t->type === 'receivable') {
-                $assets += $remaining;
-            } elseif ($t->type === 'payable') {
-                $liabilities += $remaining;
-            } elseif ($t->type === 'income') {
-                $income += $abs;
-            }
-        }
+        $total = 0;
+        $baseQuery()
+            ->select(['id', 'type', 'amount', 'settled_amount'])
+            ->withCount('contacts')
+            ->chunk(1000, function ($chunk) use (&$assets, &$liabilities, &$income, &$total): void {
+                foreach ($chunk as $t) {
+                    $total++;
+                    if ((int) $t->contacts_count >= 2) {
+                        continue; // group obligation — not part of this person's individual balance
+                    }
+                    $abs = abs((float) $t->amount);
+                    $remaining = max(0.0, $abs - max(0.0, min($abs, (float) ($t->settled_amount ?? 0))));
+                    if ($t->type === 'receivable') {
+                        $assets += $remaining;
+                    } elseif ($t->type === 'payable') {
+                        $liabilities += $remaining;
+                    } elseif ($t->type === 'income') {
+                        $income += $abs;
+                    }
+                }
+            });
+
+        // Display list is capped; the summary above is not, so large histories still
+        // report a correct balance and the UI can warn that rows are truncated.
+        $transactions = $baseQuery()
+            ->with(['category:id,name,type', 'contacts:id,name'])
+            ->orderBy('occurred_on', 'desc')
+            ->orderBy('id', 'desc')
+            ->limit(self::ROW_LIMIT)
+            ->get();
 
         $rows = $transactions->map(function (Transaction $t) use ($contact) {
             return [
@@ -139,6 +155,12 @@ class ContactController extends Controller
                 'income_primary' => (string) $income,
             ],
             'transactions' => $rows,
+            'listMeta' => [
+                'shown' => $rows->count(),
+                'total' => $total,
+                'limit' => self::ROW_LIMIT,
+                'truncated' => $total > self::ROW_LIMIT,
+            ],
         ]);
     }
 

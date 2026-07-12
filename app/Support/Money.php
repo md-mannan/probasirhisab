@@ -24,6 +24,36 @@ final class Money
         return round($value, $scale);
     }
 
+    /** Round a value to the number of decimals the given currency actually uses. */
+    public static function roundFor(float $value, string $currencyCode): float
+    {
+        return round($value, Currency::decimalsFor($currencyCode));
+    }
+
+    /**
+     * The single, canonical secondary-currency derivation. Given a portion of a
+     * transaction's primary amount (the whole amount, or one settlement's amount),
+     * convert it to the secondary currency using the ratio actually booked on the
+     * transaction (secondary_amount / amount) and round to the secondary currency's
+     * decimals. Returns null when the transaction has no secondary amount or a zero
+     * primary (division guard).
+     *
+     * Using the booked ratio — not the stored `rate` column — keeps every surface
+     * (ledger, transactions list, dashboard, balance sheet) in agreement.
+     */
+    public static function deriveSecondary(
+        float $primaryPortion,
+        ?float $txPrimary,
+        ?float $txSecondary,
+        string $secondaryCurrency,
+    ): ?float {
+        if ($txSecondary === null || $txPrimary === null || abs($txPrimary) < self::EPSILON) {
+            return null;
+        }
+
+        return self::roundFor($primaryPortion * ($txSecondary / $txPrimary), $secondaryCurrency);
+    }
+
     /** True when $a is strictly greater than $b beyond the tolerance. */
     public static function greaterThan(float $a, float $b): bool
     {

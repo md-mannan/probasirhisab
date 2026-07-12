@@ -12,6 +12,7 @@ use App\Support\Money;
 use App\Support\PrimaryCashBalance;
 use App\Support\SharedCatalog;
 use App\Support\TransactionListSortOrder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -57,7 +58,7 @@ class TransactionWriter
         $primaryCurrency = $user->primary_currency ?: 'KWD';
         $secondaryCurrency = $user->secondary_currency ?: 'BDT';
 
-        [$primaryAmount, $secondaryAmount, $rate] = $this->resolveAmounts($data);
+        [$primaryAmount, $secondaryAmount, $rate] = $this->resolveAmounts($data, $primaryCurrency, $secondaryCurrency);
 
         $category = $this->resolveCategory($user, $data);
         $contactIds = $this->resolveContactIds($user, $data);
@@ -93,40 +94,48 @@ class TransactionWriter
             'source' => ($data['source'] ?? null) ? trim($data['source']) : null,
         ];
 
-        if ($isUpdate) {
-            $transaction->fill($attributes);
-            $transaction->saveOrFail();
-        } else {
-            $transaction = Transaction::query()->create([
-                'user_id' => $user->id,
-                'sort_order' => null,
-                ...$attributes,
-            ]);
+        // All writes (transaction row, sort_order, contacts pivot, opening settlement,
+        // settled_amount recompute, ledger sync) must land together or not at all —
+        // a partial write would desync the ledger from settled_amount and corrupt the
+        // derived cash balance.
+        return DB::transaction(function () use (
+            $user, $transaction, $isUpdate, $attributes, $contactIds, $openingSettled
+        ): Transaction {
+            if ($isUpdate) {
+                $transaction->fill($attributes);
+                $transaction->saveOrFail();
+            } else {
+                $transaction = Transaction::query()->create([
+                    'user_id' => $user->id,
+                    'sort_order' => null,
+                    ...$attributes,
+                ]);
 
-            $transaction->sort_order = TransactionListSortOrder::nextForUser($user->id);
-            $transaction->save();
-        }
+                $transaction->sort_order = TransactionListSortOrder::nextForUser($user->id);
+                $transaction->save();
+            }
 
-        // On create we only sync the pivot when contacts were supplied (preserves the
-        // original behaviour where creating without contacts skips the sync entirely).
-        if ($isUpdate || count($contactIds) > 0) {
-            $transaction->contacts()->syncWithPivotValues(
-                $contactIds,
-                ['user_id' => $user->id],
-            );
-        }
+            // On create we only sync the pivot when contacts were supplied (preserves the
+            // original behaviour where creating without contacts skips the sync entirely).
+            if ($isUpdate || count($contactIds) > 0) {
+                $transaction->contacts()->syncWithPivotValues(
+                    $contactIds,
+                    ['user_id' => $user->id],
+                );
+            }
 
-        if ($openingSettled !== null && $openingSettled > 0) {
-            $this->createOpeningSettlement($user, $transaction, $openingSettled);
-        }
+            if ($openingSettled !== null && $openingSettled > 0) {
+                $this->createOpeningSettlement($user, $transaction, $openingSettled);
+            }
 
-        // Keep the denormalized column in step with the settlement records so every
-        // surface (list, detail, dashboard, balance sheet) reports the same figure.
-        $this->recomputeSettledAmount($transaction);
+            // Keep the denormalized column in step with the settlement records so every
+            // surface (list, detail, dashboard, balance sheet) reports the same figure.
+            $this->recomputeSettledAmount($transaction);
 
-        $this->ledgerSync->syncForTransaction($transaction->fresh(['settlements']) ?? $transaction);
+            $this->ledgerSync->syncForTransaction($transaction->fresh(['settlements']) ?? $transaction);
 
-        return $transaction;
+            return $transaction;
+        });
     }
 
     /** Recompute settled_amount as the sum of settlement records for the transaction. */
@@ -185,12 +194,13 @@ class TransactionWriter
 
     /**
      * Derive the missing primary/secondary amount from the rate when only one side
-     * is provided. Returns [primaryAmount, secondaryAmount, rate].
+     * is provided. Each derived side is rounded to its own currency's decimals (KWD=3,
+     * BDT=2), not a flat scale. Returns [primaryAmount, secondaryAmount, rate].
      *
      * @param  array<string, mixed>  $data
      * @return array{0: float|null, 1: float|null, 2: float|null}
      */
-    private function resolveAmounts(array $data): array
+    private function resolveAmounts(array $data, string $primaryCurrency, string $secondaryCurrency): array
     {
         $primaryAmount = array_key_exists('primary_amount', $data) ? $data['primary_amount'] : null;
         $secondaryAmount = array_key_exists('secondary_amount', $data) ? $data['secondary_amount'] : null;
@@ -211,9 +221,9 @@ class TransactionWriter
 
         if ($rate !== null) {
             if ($primaryAmount !== null && $secondaryAmount === null) {
-                $secondaryAmount = Money::round((float) $primaryAmount * (float) $rate);
+                $secondaryAmount = Money::roundFor((float) $primaryAmount * (float) $rate, $secondaryCurrency);
             } elseif ($secondaryAmount !== null && $primaryAmount === null) {
-                $primaryAmount = Money::round((float) $secondaryAmount / (float) $rate);
+                $primaryAmount = Money::roundFor((float) $secondaryAmount / (float) $rate, $primaryCurrency);
             }
         }
 

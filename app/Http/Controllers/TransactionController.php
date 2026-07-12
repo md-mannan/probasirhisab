@@ -12,6 +12,7 @@ use App\Models\Transaction;
 use App\Models\TransactionSettlement;
 use App\Services\ExchangeRateService;
 use App\Support\Currency;
+use App\Support\Money;
 use App\Support\PrimaryCashBalance;
 use App\Support\SharedCatalog;
 use App\Support\TransactionType;
@@ -24,7 +25,7 @@ use Inertia\Response;
 class TransactionController extends Controller
 {
     /** Max transaction rows (and settlement rows) loaded into the combined list. */
-    private const ROW_LIMIT = 600;
+    private const ROW_LIMIT = 500000;
 
     private function settlementStatusFromValues(string $type, float $amount, float $settled): ?string
     {
@@ -280,7 +281,7 @@ class TransactionController extends Controller
             ->join('transactions as t', 'transaction_settlements.transaction_id', '=', 't.id')
             ->with([
                 'category:id,name,type',
-                'transaction:id,type,sort_order,occurred_on,currency,secondary_currency,rate',
+                'transaction:id,type,sort_order,occurred_on,amount,secondary_amount,currency,secondary_currency,rate',
                 'transaction.contacts:id,name',
             ])
             ->orderBy('transaction_settlements.sort_order')
@@ -292,10 +293,16 @@ class TransactionController extends Controller
                 $t = $s->transaction;
                 $isPayable = $t?->type === 'payable';
                 $sign = $isPayable ? -1 : 1;
-                $rate = $t?->rate === null ? null : (float) $t->rate;
-                $secondary = ($rate !== null && $rate > 0)
-                    ? (string) ((float) $s->amount * $rate)
-                    : null;
+                // Same canonical derivation as the ledger/dashboard (booked ratio,
+                // rounded to the secondary currency) so every surface agrees. Kept
+                // unsigned to match the base-row convention (amount carries the sign).
+                $secondaryValue = Money::deriveSecondary(
+                    (float) $s->amount,
+                    $t?->amount === null ? null : (float) $t->amount,
+                    $t?->secondary_amount === null ? null : (float) $t->secondary_amount,
+                    (string) ($t?->secondary_currency ?? ''),
+                );
+                $secondary = $secondaryValue === null ? null : (string) $secondaryValue;
 
                 return [
                     'id' => 's-'.$s->id,
@@ -420,7 +427,10 @@ class TransactionController extends Controller
             abort(403);
         }
 
-        $transaction->deleteOrFail();
+        // Deleting a transaction cascades to its ledger entries (model deleting hook)
+        // plus settlements and the contacts pivot (DB FKs) — wrap so the row and all
+        // its dependents disappear together, never leaving orphaned ledger lines.
+        DB::transaction(fn () => $transaction->deleteOrFail());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Transaction deleted.')]);
 

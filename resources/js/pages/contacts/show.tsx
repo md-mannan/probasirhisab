@@ -42,6 +42,12 @@ type Props = {
         category: { id: number; name: string; type: string } | null;
         co_people: Array<{ id: number; name: string }>;
     }>;
+    listMeta?: {
+        shown: number;
+        total: number;
+        limit: number;
+        truncated: boolean;
+    };
 };
 
 export default function ContactShow({
@@ -52,6 +58,7 @@ export default function ContactShow({
     contact,
     summary,
     transactions,
+    listMeta,
 }: Props) {
     const formatFixed = (value: number, decimals: number) => {
         if (!Number.isFinite(value)) {
@@ -154,6 +161,14 @@ return null;
                         </div>
                     ))}
                 </div>
+
+                {listMeta?.truncated ? (
+                    <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+                        Showing the most recent {listMeta.shown} of{' '}
+                        {listMeta.total} transactions. The summary totals above
+                        cover all of them.
+                    </div>
+                ) : null}
 
                 <div className="rounded-xl border border-sidebar-border/70 bg-card">
                     {transactions.length === 0 ? (

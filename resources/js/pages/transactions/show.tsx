@@ -108,10 +108,15 @@ return '';
         const n = Number(rate);
 
         if (!Number.isFinite(n)) {
-return '—';
-}
+            return '—';
+        }
 
-        return formatFixed(n, secondaryDecimals);
+        // A rate is not a currency amount — don't round it to the currency's decimals
+        // (that turns 0.0025 into 0.003). Show up to the stored precision (8 dp),
+        // trimming trailing zeros so it reads cleanly.
+        return n
+            .toFixed(8)
+            .replace(/\.?0+$/, '');
     };
 
     const statusLabel = (status: Props['transaction']['settlement_status']) => {
