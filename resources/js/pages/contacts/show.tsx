@@ -20,10 +20,17 @@ type Props = {
         id: number;
         name: string;
     };
+    summary: {
+        assets_primary: string;
+        liabilities_primary: string;
+        net_primary: string;
+        income_primary: string;
+    };
     transactions: Array<{
         id: number;
         type: string;
         amount: string;
+        is_group: boolean;
         settled_amount: string | null;
         currency: string;
         secondary_amount: string | null;
@@ -33,6 +40,7 @@ type Props = {
         occurred_on: string;
         note: string | null;
         category: { id: number; name: string; type: string } | null;
+        co_people: Array<{ id: number; name: string }>;
     }>;
 };
 
@@ -42,6 +50,7 @@ export default function ContactShow({
     primaryDecimals,
     secondaryDecimals,
     contact,
+    summary,
     transactions,
 }: Props) {
     const formatFixed = (value: number, decimals: number) => {
@@ -97,6 +106,53 @@ return null;
                             Back
                         </Link>
                     </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {(
+                        [
+                            {
+                                label: 'Assets (they owe you)',
+                                value: Number(summary.assets_primary),
+                                tone: 'text-emerald-600 dark:text-emerald-400',
+                            },
+                            {
+                                label: 'Liabilities (you owe them)',
+                                value: Number(summary.liabilities_primary),
+                                tone: 'text-destructive',
+                            },
+                            {
+                                label: 'Net',
+                                value: Number(summary.net_primary),
+                                tone:
+                                    Number(summary.net_primary) < 0
+                                        ? 'text-destructive'
+                                        : 'text-emerald-600 dark:text-emerald-400',
+                            },
+                            {
+                                label: 'Income',
+                                value: Number(summary.income_primary),
+                                tone: 'text-foreground',
+                            },
+                        ] as const
+                    ).map((s) => (
+                        <div
+                            key={s.label}
+                            className="rounded-xl border border-sidebar-border/70 bg-card px-4 py-3"
+                        >
+                            <div className="text-xs text-muted-foreground">
+                                {s.label}
+                            </div>
+                            <div
+                                className={`mt-1 text-lg font-semibold tabular-nums ${s.tone}`}
+                            >
+                                {formatFixed(s.value, primaryDecimals)}{' '}
+                                <span className="text-xs font-normal text-muted-foreground">
+                                    {primaryCurrency}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
 
                 <div className="rounded-xl border border-sidebar-border/70 bg-card">
@@ -169,6 +225,17 @@ return null;
                                                             {t.note ?? '—'}
                                                         </TooltipContent>
                                                     </Tooltip>
+                                                    {t.co_people.length > 0 && (
+                                                        <div className="mt-1 text-xs text-muted-foreground">
+                                                            with{' '}
+                                                            {t.co_people
+                                                                .map(
+                                                                    (p) =>
+                                                                        p.name,
+                                                                )
+                                                                .join(', ')}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-3 align-middle">
                                                     {t.type}

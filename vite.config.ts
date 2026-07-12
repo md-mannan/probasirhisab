@@ -6,6 +6,25 @@ import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import { defineConfig } from 'vite';
 
+/**
+ * Name a built chunk after its source file (path under resources/js), with no content
+ * hash — so the output is `assets/pages/contacts/index.js` instead of `index-CuUOa15I.js`.
+ * Shared/vendor chunks have no source file; they fall back to their chunk name.
+ */
+function chunkNameFromSource(chunkInfo: { facadeModuleId?: string | null }): string {
+    const id = chunkInfo.facadeModuleId;
+    if (id) {
+        const match = id
+            .replace(/\\/g, '/')
+            .match(/resources\/js\/(.+)\.(?:tsx|ts|jsx|js)$/);
+        if (match) {
+            return `assets/${match[1]}.js`;
+        }
+    }
+
+    return 'assets/[name].js';
+}
+
 export default defineConfig({
     /** Pre-bundle heavy deps so dev client never hits stale `504 Outdated Optimize Dep`. */
     optimizeDeps: {
@@ -21,6 +40,11 @@ export default defineConfig({
         chunkSizeWarningLimit: 1200,
         rollupOptions: {
             output: {
+                // Name built files after their source (no content hash) so output is
+                // stable and recognizable, e.g. `app.js` / `pages/contacts/index.js`.
+                entryFileNames: 'assets/[name].js',
+                chunkFileNames: chunkNameFromSource,
+                assetFileNames: 'assets/[name][extname]',
                 manualChunks(id) {
                     if (id.includes('node_modules/@inertiajs/')) {
                         return 'vendor-inertia';

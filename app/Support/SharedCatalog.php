@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Contact;
 use App\Models\User;
+use Illuminate\Support\Collection;
 
 /**
  * Categories and contacts owned by Super Admin are visible to all authenticated users.
@@ -59,6 +60,47 @@ final class SharedCatalog
     public static function visibleOwnerIds(User $viewer): array
     {
         return array_values(array_unique(array_merge([(int) $viewer->id], self::superAdminIds())));
+    }
+
+    /**
+     * People are synced per owner (one user-backed contact per system user), yet
+     * contact lists union the viewer's own rows with the Super Admin's shared set.
+     * For a non-Super-Admin viewer both sides hold a full roster, so every person
+     * would appear twice. Collapse user-backed contacts to one row per system user,
+     * preferring the viewer's own copy so per-user transaction links still resolve.
+     * Non-user-backed contacts (member_user_id null) are all kept as-is.
+     *
+     * @param  Collection<int, Contact>  $contacts
+     * @return Collection<int, Contact>
+     */
+    public static function dedupePeople(Collection $contacts, User $viewer): Collection
+    {
+        $indexByMember = [];
+        $result = [];
+
+        foreach ($contacts as $contact) {
+            $memberId = $contact->member_user_id;
+
+            if ($memberId === null) {
+                $result[] = $contact;
+
+                continue;
+            }
+
+            if (! array_key_exists($memberId, $indexByMember)) {
+                $indexByMember[$memberId] = count($result);
+                $result[] = $contact;
+
+                continue;
+            }
+
+            // Prefer the viewer's own row (keeps its position in the sorted list).
+            if ((int) $contact->user_id === (int) $viewer->id) {
+                $result[$indexByMember[$memberId]] = $contact;
+            }
+        }
+
+        return collect($result);
     }
 
     public static function canAccessContact(User $viewer, Contact $contact): bool

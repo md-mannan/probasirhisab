@@ -83,10 +83,13 @@ class TransactionController extends Controller
         $primaryCurrency = $user->primary_currency ?: 'KWD';
         $secondaryCurrency = $user->secondary_currency ?: 'BDT';
 
-        $contacts = Contact::query()
-            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name']);
+        $contacts = SharedCatalog::dedupePeople(
+            Contact::query()
+                ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
+                ->orderBy('name', 'asc')
+                ->get(['id', 'name', 'user_id', 'member_user_id']),
+            $user,
+        )->map(fn (Contact $c) => ['id' => $c->id, 'name' => $c->name])->values();
 
         $settlements = collect();
         if (in_array($transaction->type, ['payable', 'receivable'], true)) {
@@ -198,10 +201,13 @@ class TransactionController extends Controller
         $primaryDecimals = Currency::decimalsFor($primaryCurrency);
         $secondaryDecimals = Currency::decimalsFor($secondaryCurrency);
 
-        $contacts = Contact::query()
-            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
-            ->orderBy('name', 'asc')
-            ->get(['id', 'name']);
+        $contacts = SharedCatalog::dedupePeople(
+            Contact::query()
+                ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
+                ->orderBy('name', 'asc')
+                ->get(['id', 'name', 'user_id', 'member_user_id']),
+            $user,
+        )->map(fn (Contact $c) => ['id' => $c->id, 'name' => $c->name])->values();
 
         $defaultRate = null;
         $fx = ExchangeRateSetting::the();
