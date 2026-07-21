@@ -290,6 +290,31 @@ export default function TransactionsIndex({
     };
 
     // Deep-link support: on mount, read ?edit=<id> from the URL (an external
+    // Auto-open the create dialog when navigating with ?create=TYPE (e.g. from the
+    // header's "+ Add" dropdown). Strip the param afterwards to avoid re-opening.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const createType = params.get('create');
+
+        if (!createType) {
+            return;
+        }
+
+        // Use the param value as the type if it's valid, otherwise fall back.
+        const validType = types[createType] ? createType : Object.keys(types)[0] ?? 'expense';
+
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        openCreate(validType);
+
+        params.delete('create');
+        const next = params.toString();
+        const url = next
+            ? `${window.location.pathname}?${next}`
+            : window.location.pathname;
+        window.history.replaceState({}, '', url);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // system) and open that transaction's edit dialog, then strip the param. This
     // is a legitimate mount-time effect syncing with the URL.
     useEffect(() => {
@@ -693,37 +718,6 @@ export default function TransactionsIndex({
                         title="Transactions"
                         description="Manage your income, expenses, payables and receivables"
                     />
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button>
-                                <Plus className="mr-2 size-4" />
-                                Add
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {typeEntries.map(([value, label]) => (
-                                <DropdownMenuItem
-                                    key={value}
-                                    disabled={cashBlocksType(value)}
-                                    title={
-                                        cashBlocksType(value)
-                                            ? 'Insufficient cash balance'
-                                            : undefined
-                                    }
-                                    onSelect={() => {
-                                        if (cashBlocksType(value)) {
-                                            return;
-                                        }
-
-                                        openCreate(value);
-                                    }}
-                                >
-                                    {label}
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
 
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
                         <DialogContent className="flex max-h-[90dvh] min-h-0 w-[calc(100%-2rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">

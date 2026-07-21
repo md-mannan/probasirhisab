@@ -1,15 +1,18 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
+import { index as transactionsIndex } from '@/routes/transactions';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 export function AppSidebarHeader({
@@ -21,7 +24,7 @@ export function AppSidebarHeader({
     const getInitials = useInitials();
 
     return (
-        <header className="sticky top-0 z-30 -mx-2 flex h-16 w-full shrink-0 items-center border-b border-sidebar-border/50 bg-background/85 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-sm transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 supports-backdrop-filter:bg-background/70 sm:-mx-4 sm:px-4 md:-mx-5 md:px-5 md:pl-7">
+        <header className="sticky  top-0 z-30 -mx-2 flex h-16 w-full shrink-0 items-center border-b border-sidebar-border/50 bg-background/85 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-sm transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 supports-backdrop-filter:bg-background/70 sm:-mx-4 sm:px-4 md:-mx-5 md:px-5 md:pl-7">
             <div className="flex w-full min-w-0 items-center gap-2 md:gap-4">
                 <SidebarTrigger className="shrink-0" />
                 <div className="min-w-0 flex-1 overflow-hidden">
@@ -29,7 +32,24 @@ export function AppSidebarHeader({
                 </div>
 
                 {auth.user && (
-                    <div className="ml-auto shrink-0">
+                    <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="sm">
+                                    <Plus className="mr-1 size-4" />
+                                    Add
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {(['income', 'expense', 'payable', 'receivable'] as const).map((type) => (
+                                    <DropdownMenuItem key={type} asChild>
+                                        <Link href={transactionsIndex.url({ query: { create: type } })} className="capitalize">
+                                            {type}
+                                        </Link>
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button

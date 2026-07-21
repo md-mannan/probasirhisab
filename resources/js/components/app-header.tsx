@@ -1,5 +1,14 @@
 import { Link, usePage } from '@inertiajs/react';
-import { ArrowLeftRight, LayoutGrid, Menu, Scale, ScrollText, Search, Tags, Users } from 'lucide-react';
+import {
+    ArrowLeftRight,
+    LayoutGrid,
+    Menu,
+    Scale,
+    ScrollText,
+    Search,
+    Tags,
+    Users,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -195,7 +204,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         </NavigationMenu>
                     </div>
 
-                    <div className="ml-auto flex items-center space-x-2 -mr-2 lg:mr-0">
+                    <div className="-mr-2 ml-auto flex items-center space-x-2 lg:mr-0">
                         <div className="relative flex items-center space-x-1">
                             <Button
                                 variant="ghost"
