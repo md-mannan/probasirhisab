@@ -43,12 +43,12 @@ class TransactionLedgerSync
         // - expense: cash - (debit)
         // - payable (borrow): cash + (credit)
         // - receivable (lend): cash - (debit)
-        if (in_array($transaction->type, ['income', 'payable'], true)) {
+        if (in_array($transaction->type, ['income', 'payable', 'transfer_in'], true)) {
             $creditPrimary = $primary;
             if ($secondary !== null) {
                 $creditSecondary = $secondary;
             }
-        } elseif (in_array($transaction->type, ['expense', 'receivable'], true)) {
+        } elseif (in_array($transaction->type, ['expense', 'receivable', 'transfer_out'], true)) {
             $debitPrimary = $primary;
             if ($secondary !== null) {
                 $debitSecondary = $secondary;

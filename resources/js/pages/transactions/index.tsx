@@ -205,6 +205,7 @@ export default function TransactionsIndex({
     const [source, setSource] = useState<string>('');
     const [settledAmount, setSettledAmount] = useState<string>('');
     const [contactIds, setContactIds] = useState<string[]>([]); // optional
+    const [transferContactId, setTransferContactId] = useState<string>('');
     const [lastEdited, setLastEdited] = useState<'primary' | 'secondary'>(
         'primary',
     );
@@ -222,6 +223,7 @@ export default function TransactionsIndex({
     const [editNote, setEditNote] = useState<string>('');
     const [editSettledAmount, setEditSettledAmount] = useState<string>('');
     const [editContactIds, setEditContactIds] = useState<string[]>([]); // optional
+    const [editTransferContactId, setEditTransferContactId] = useState<string>('');
     const [editDate, setEditDate] = useState<string>(
         new Date().toISOString().slice(0, 10),
     );
@@ -238,6 +240,7 @@ export default function TransactionsIndex({
         setSource('');
         setSettledAmount('');
         setContactIds([]);
+        setTransferContactId('');
         setLastEdited('primary');
         setCreateOpen(true);
     };
@@ -279,6 +282,7 @@ export default function TransactionsIndex({
         setEditNote(tx.note ?? '');
         setEditSettledAmount(tx.settled_amount ?? '');
         setEditContactIds(tx.contacts.map((c) => String(c.id)));
+        setEditTransferContactId('');
         setEditDate(
             typeof tx.occurred_on === 'string'
                 ? tx.occurred_on
@@ -301,7 +305,12 @@ export default function TransactionsIndex({
         }
 
         // Use the param value as the type if it's valid, otherwise fall back.
-        const validType = types[createType] ? createType : Object.keys(types)[0] ?? 'expense';
+        let validType = createType;
+        if (createType === 'transfer') {
+            validType = 'transfer_out';
+        } else if (!types[createType]) {
+            validType = Object.keys(types)[0] ?? 'expense';
+        }
 
         // eslint-disable-next-line react-hooks/set-state-in-effect
         openCreate(validType);
@@ -464,7 +473,21 @@ export default function TransactionsIndex({
             };
         }
 
+        if (type === 'transfer_out') {
             return {
+                label: types[type] ?? type,
+                cls: 'bg-rose-500/15 text-rose-700 dark:text-rose-300',
+            };
+        }
+
+        if (type === 'transfer_in') {
+            return {
+                label: types[type] ?? type,
+                cls: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+            };
+        }
+
+        return {
                 label: types[type] ?? type,
                 cls: 'bg-muted text-muted-foreground',
             };
@@ -716,7 +739,7 @@ export default function TransactionsIndex({
                 <div className="mb-0 flex flex-wrap items-start justify-between gap-4">
                     <Heading
                         title="Transactions"
-                        description="Manage your income, expenses, payables and receivables"
+                        description="Manage your income, expenses, payables, receivables and transfers"
                     />
 
                     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -749,102 +772,236 @@ export default function TransactionsIndex({
 
                                         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-0">
                                         <div className="grid gap-1 md:grid-cols-2 md:items-start">
-                                            <div className={TX_FIELD_COL}>
-                                                <div className={TX_LABEL_WRAP}>
-                                                    <Label
-                                                        htmlFor="contact_id"
-                                                        className="leading-snug"
-                                                    >
-                                                        Person (optional)
-                                                    </Label>
-                                                </div>
-                                                {contactIds.map((id) => (
-                                                    <input
-                                                        key={id}
-                                                        type="hidden"
-                                                        name="contact_ids[]"
-                                                        value={id}
-                                                    />
-                                                ))}
-                                                <Select
-                                                    value={CONTACT_NONE}
-                                                    onValueChange={(v) => {
-                                                        addContactId(v);
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select person" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem
-                                                            value={CONTACT_NONE}
-                                                        >
-                                                            Select person…
-                                                        </SelectItem>
-                                                        {contacts.map((c) => (
-                                                            <SelectItem
-                                                                key={c.id}
-                                                                value={String(
-                                                                    c.id,
-                                                                )}
+                                            {createType === 'transfer_out' ? (
+                                                <>
+                                                    <div className={TX_FIELD_COL}>
+                                                        <div className={TX_LABEL_WRAP}>
+                                                            <Label
+                                                                htmlFor="transfer_from_contact"
+                                                                className="leading-snug"
                                                             >
-                                                                {c.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                {contactIds.length > 0 ? (
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {contactIds.map(
-                                                            (id) => (
-                                                                <div
-                                                                    key={id}
-                                                                    className="inline-flex items-center gap-1 rounded-full border border-sidebar-border/70 bg-muted/10 px-2 py-1 text-xs"
+                                                                From contact
+                                                            </Label>
+                                                        </div>
+                                                        <input
+                                                            type="hidden"
+                                                            name="contact_ids[]"
+                                                            value={contactIds[0] ?? ''}
+                                                        />
+                                                        <Select
+                                                            value={contactIds[0] ?? CONTACT_NONE}
+                                                            onValueChange={(v) => {
+                                                                if (v === CONTACT_NONE) {
+                                                                    setContactIds([]);
+                                                                } else {
+                                                                    setContactIds([v]);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select from contact" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem
+                                                                    value={CONTACT_NONE}
                                                                 >
-                                                                    <span className="max-w-[200px] truncate">
-                                                                        {contactNameById(
-                                                                            id,
+                                                                    Select from contact…
+                                                                </SelectItem>
+                                                                {contacts.map((c) => (
+                                                                    <SelectItem
+                                                                        key={c.id}
+                                                                        value={String(
+                                                                            c.id,
                                                                         )}
-                                                                    </span>
-                                                                    <button
-                                                                        type="button"
-                                                                        className="text-muted-foreground hover:text-foreground"
-                                                                        aria-label="Remove person"
-                                                                        onClick={() =>
-                                                                            removeContactId(
-                                                                                id,
-                                                                            )
-                                                                        }
                                                                     >
-                                                                        <X className="size-3" />
-                                                                    </button>
-                                                                </div>
-                                                            ),
+                                                                        {c.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {(contactIds.length === 0 ||
+                                                            errors.contact_ids ||
+                                                            errors.contact_id) && (
+                                                            <div className="mt-0.5 space-y-0.5 text-xs leading-snug">
+                                                                <InputError
+                                                                    message={
+                                                                        errors.contact_ids ??
+                                                                        errors.contact_id
+                                                                    }
+                                                                />
+                                                            </div>
                                                         )}
                                                     </div>
-                                                ) : null}
-                                                {(contactIds.length === 0 ||
-                                                    errors.contact_ids ||
-                                                    errors.contact_id) && (
-                                                    <div className="mt-0.5 space-y-0.5 text-xs leading-snug">
-                                                        {contactIds.length ===
-                                                            0 && (
-                                                            <p className="text-muted-foreground">
-                                                                You can add multiple
-                                                                people by selecting
-                                                                one-by-one.
-                                                            </p>
-                                                        )}
+
+                                                    <div className={TX_FIELD_COL}>
+                                                        <div className={TX_LABEL_WRAP}>
+                                                            <Label
+                                                                htmlFor="transfer_to_contact"
+                                                                className="leading-snug"
+                                                            >
+                                                                To contact
+                                                            </Label>
+                                                        </div>
+                                                        <input
+                                                            type="hidden"
+                                                            name="transfer_contact_id"
+                                                            value={transferContactId}
+                                                        />
+                                                        <Select
+                                                            value={transferContactId || CONTACT_NONE}
+                                                            onValueChange={(v) => {
+                                                                setTransferContactId(
+                                                                    v === CONTACT_NONE ? '' : v,
+                                                                );
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select to contact" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem
+                                                                    value={CONTACT_NONE}
+                                                                >
+                                                                    Select to contact…
+                                                                </SelectItem>
+                                                                {contacts.map((c) => (
+                                                                    <SelectItem
+                                                                        key={c.id}
+                                                                        value={String(
+                                                                            c.id,
+                                                                        )}
+                                                                    >
+                                                                        {c.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                         <InputError
-                                                            message={
-                                                                errors.contact_ids ??
-                                                                errors.contact_id
-                                                            }
+                                                            className="mt-0.5"
+                                                            message={errors.transfer_contact_id}
                                                         />
                                                     </div>
-                                                )}
-                                            </div>
+                                                </>
+                                            ) : (
+                                                <div className={TX_FIELD_COL}>
+                                                    <div className={TX_LABEL_WRAP}>
+                                                        <Label
+                                                            htmlFor="contact_id"
+                                                            className="leading-snug"
+                                                         >
+                                                             {editType === 'transfer_out' || editType === 'transfer_in' ? 'From contact' : 'Person (optional)'}
+                                                        </Label>
+                                                    </div>
+                                                    {contactIds.map((id) => (
+                                                        <input
+                                                            key={id}
+                                                            type="hidden"
+                                                            name="contact_ids[]"
+                                                            value={id}
+                                                        />
+                                                    ))}
+                                                    <Select
+                                                        value={CONTACT_NONE}
+                                                        onValueChange={(v) => {
+                                                            addContactId(v);
+                                                        }}
+                                                    >
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Select person" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem
+                                                                value={CONTACT_NONE}
+                                                            >
+                                                                Select person…
+                                                            </SelectItem>
+                                                            {contacts.map((c) => (
+                                                                <SelectItem
+                                                                    key={c.id}
+                                                                    value={String(
+                                                                        c.id,
+                                                                    )}
+                                                                >
+                                                                    {c.name}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {contactIds.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {contactIds.map(
+                                                                (id) => (
+                                                                    <div
+                                                                        key={id}
+                                                                        className="inline-flex items-center gap-1 rounded-full border border-sidebar-border/70 bg-muted/10 px-2 py-1 text-xs"
+                                                                    >
+                                                                        <span className="max-w-[200px] truncate">
+                                                                            {contactNameById(
+                                                                                id,
+                                                                            )}
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="text-muted-foreground hover:text-foreground"
+                                                                            aria-label="Remove person"
+                                                                            onClick={() =>
+                                                                                removeContactId(
+                                                                                    id,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <X className="size-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    ) : null}
+                                                    {(contactIds.length === 0 ||
+                                                        errors.contact_ids ||
+                                                        errors.contact_id) && (
+                                                        <div className="mt-0.5 space-y-0.5 text-xs leading-snug">
+                                                            {contactIds.length ===
+                                                                0 && (
+                                                                <p className="text-muted-foreground">
+                                                                    You can add multiple
+                                                                    people by selecting
+                                                                    one-by-one.
+                                                                </p>
+                                                            )}
+                                                            <InputError
+                                                                message={
+                                                                    errors.contact_ids ??
+                                                                    errors.contact_id
+                                                                }
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
 
+                                            {createType === 'transfer_out' && (
+                                                <div className={TX_FIELD_COL}>
+                                                    <div className={TX_LABEL_WRAP}>
+                                                        <Label htmlFor="transfer_to_contact" className="leading-snug">
+                                                            To contact
+                                                        </Label>
+                                                    </div>
+                                                    <input type="hidden" name="transfer_contact_id" value={transferContactId} />
+                                                    <Select value={transferContactId || CONTACT_NONE} onValueChange={(v) => setTransferContactId(v === CONTACT_NONE ? '' : v)}>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Select to contact" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value={CONTACT_NONE}>Select to contact…</SelectItem>
+                                                            {contacts.map((c) => (
+                                                                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <InputError className="mt-0.5" message={errors.transfer_contact_id} />
+                                                </div>
+                                            )}
                                             <div
                                                 className={`${TX_FIELD_COL} self-start`}
                                             >
@@ -2066,8 +2223,8 @@ export default function TransactionsIndex({
                                                     <Label
                                                         htmlFor="edit_contact_id"
                                                         className="leading-snug"
-                                                    >
-                                                        Person (optional)
+                                                         >
+                                                             {editType === 'transfer_out' || editType === 'transfer_in' ? 'From contact' : 'Person (optional)'}
                                                     </Label>
                                                 </div>
                                                 {editContactIds.map((id) => (
@@ -2158,6 +2315,28 @@ export default function TransactionsIndex({
                                                 )}
                                             </div>
 
+                                            {(editType === 'transfer_out' || editType === 'transfer_in') && (
+                                                <div className={TX_FIELD_COL}>
+                                                    <div className={TX_LABEL_WRAP}>
+                                                        <Label htmlFor="edit_transfer_to_contact" className="leading-snug">
+                                                            To contact
+                                                        </Label>
+                                                    </div>
+                                                    <input type="hidden" name="transfer_contact_id" value={editTransferContactId} />
+                                                    <Select value={editTransferContactId || CONTACT_NONE} onValueChange={(v) => setEditTransferContactId(v === CONTACT_NONE ? '' : v)}>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Select to contact" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value={CONTACT_NONE}>Select to contact…</SelectItem>
+                                                            {contacts.map((c) => (
+                                                                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <InputError className="mt-0.5" message={errors.transfer_contact_id} />
+                                                </div>
+                                            )}
                                             <div
                                                 className={`${TX_FIELD_COL} self-start`}
                                             >

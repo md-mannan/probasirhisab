@@ -69,7 +69,7 @@ class ContactController extends Controller
         $baseQuery = fn () => Transaction::query()
             ->where('user_id', $user->id)
             ->whereHas('contacts', fn ($q) => $q->where('contacts.id', $contact->id))
-            ->whereIn('type', ['income', 'payable', 'receivable']);
+            ->whereIn('type', ['income', 'payable', 'receivable', 'transfer_in', 'transfer_out']);
 
         // Person statement summary (outstanding only): what they owe you vs. you owe
         // them. Computed over ALL of the person's transactions — never the capped
@@ -96,8 +96,10 @@ class ContactController extends Controller
                         $assets += $remaining;
                     } elseif ($t->type === 'payable') {
                         $liabilities += $remaining;
-                    } elseif ($t->type === 'income') {
+                    } elseif ($t->type === 'income' || $t->type === 'transfer_in') {
                         $income += $abs;
+                    } elseif ($t->type === 'expense' || $t->type === 'transfer_out') {
+                        $income += 0; // no-op, but keeps structure clear
                     }
                 }
             });
@@ -321,9 +323,9 @@ class ContactController extends Controller
         $abs = (float) $t['amount'];
         $remaining = max(0.0, $abs - (float) $t['settled']);
 
-        if ($t['type'] === 'income') {
+        if ($t['type'] === 'income' || $t['type'] === 'transfer_in') {
             $acc['income_primary'] += $abs;
-        } elseif ($t['type'] === 'expense') {
+        } elseif ($t['type'] === 'expense' || $t['type'] === 'transfer_out') {
             $acc['expense_primary'] += $abs;
         } elseif ($t['type'] === 'receivable') {
             $acc['receivable_total_primary'] += $abs;

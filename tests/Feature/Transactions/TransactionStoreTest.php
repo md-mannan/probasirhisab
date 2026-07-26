@@ -202,6 +202,95 @@ test('contacts are linked through the pivot table', function (): void {
         ->toBe([$contactA->id, $contactB->id]);
 });
 
+it('stores a transaction with income type', function (): void {
+    $user = userWithCurrencies();
+    $category = Category::factory()->ofType('income')->forUser($user)->create();
+
+    $this->actingAs($user)
+        ->post(route('transactions.store'), [
+            'type' => 'income',
+            'category_id' => $category->id,
+            'primary_amount' => 100,
+            'occurred_on' => '2026-01-01',
+        ])
+        ->assertSessionDoesntHaveErrors();
+
+    $this->assertDatabaseHas('transactions', [
+        'user_id' => $user->id,
+        'type' => 'income',
+        'category_id' => $category->id,
+        'amount' => '100.00',
+    ]);
+});
+
+test('a valid transfer creates paired expense and income transactions with ledger entries', function (): void {
+    $sender = userWithCurrencies();
+    $recipient = userWithCurrencies();
+
+    $senderTransferOutCategory = Category::factory()->ofType('transfer_out')->forUser($sender)->create();
+    $senderIncomeCategory = Category::factory()->ofType('income')->forUser($sender)->create();
+    $recipientTransferInCategory = Category::factory()->ofType('transfer_in')->forUser($recipient)->create();
+
+    $senderContact = Contact::factory()->forUser($sender)->create([
+        'member_user_id' => $sender->id,
+    ]);
+    $recipientContact = Contact::factory()->forUser($sender)->create([
+        'member_user_id' => $recipient->id,
+    ]);
+
+    $this->actingAs($sender)
+        ->from(route('transactions.index'))
+        ->post(route('transactions.store'), [
+            'type' => 'income',
+            'category_id' => $senderIncomeCategory->id,
+            'primary_amount' => 500,
+            'occurred_on' => '2026-01-01',
+        ])
+        ->assertRedirect();
+
+    $this->actingAs($sender)
+        ->from(route('transactions.index'))
+        ->post(route('transactions.store'), [
+            'type' => 'transfer',
+            'contact_ids' => [$senderContact->id],
+            'transfer_contact_id' => $recipientContact->id,
+            'primary_amount' => 100,
+            'occurred_on' => '2026-01-02',
+        ])
+        ->assertRedirect();
+
+    $senderTransactions = Transaction::where('user_id', $sender->id)
+        ->where('occurred_on', '>=', '2026-01-02')
+        ->get();
+    expect($senderTransactions)->toHaveCount(1);
+
+    $out = $senderTransactions->first();
+
+    expect($out)->not->toBeNull()
+        ->and($out->type)->toBe('transfer_out')
+        ->and((float) $out->amount)->toBe(100.0)
+        ->and((int) $out->category_id)->toBe($senderTransferOutCategory->id)
+        ->and((int) $out->contacts()->first()->id)->toBe($recipientContact->id);
+
+    $recipientTransactions = Transaction::where('user_id', $recipient->id)
+        ->where('occurred_on', '>=', '2026-01-02')
+        ->get();
+    expect($recipientTransactions)->toHaveCount(1);
+
+    $in = $recipientTransactions->first();
+
+    expect($in)->not->toBeNull()
+        ->and($in->type)->toBe('transfer_in')
+        ->and((float) $in->amount)->toBe(100.0)
+        ->and((int) $in->category_id)->toBe($recipientTransferInCategory->id)
+        ->and((int) $in->contacts()->first()->id)->toBe($senderContact->id);
+
+    expect(LedgerEntry::where('transaction_id', $out->id)->count())->toBe(1)
+        ->and(LedgerEntry::where('transaction_id', $in->id)->count())->toBe(1)
+        ->and(PrimaryCashBalance::forUserId($sender->id))->toBe(400.0)
+        ->and(PrimaryCashBalance::forUserId($recipient->id))->toBe(100.0);
+});
+
 test('a user cannot update another users transaction', function (): void {
     $owner = userWithCurrencies();
     $intruder = userWithCurrencies();

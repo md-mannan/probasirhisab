@@ -136,16 +136,24 @@ return 'Settled';
     };
 
     const isSettleable = transaction.type === 'payable' || transaction.type === 'receivable';
-    const isSimple = transaction.type === 'income' || transaction.type === 'expense';
+    const isSimple =
+        transaction.type === 'income' ||
+        transaction.type === 'expense' ||
+        transaction.type === 'transfer_out' ||
+        transaction.type === 'transfer_in';
     const total = Math.abs(Number(transaction.amount));
     const settled = Number(transaction.settled_amount ?? 0);
     const remaining = Math.max(0, total - settled);
     const isFullySettled = isSettleable && remaining <= 0.0000001;
     const hasFx = Boolean(transaction.rate && transaction.secondary_currency);
     const directionForType = (type: string) => {
-        if (type === 'expense' || type === 'payable') {
-return -1;
-}
+        if (
+            type === 'expense' ||
+            type === 'payable' ||
+            type === 'transfer_out'
+        ) {
+            return -1;
+        }
 
         return 1;
     };

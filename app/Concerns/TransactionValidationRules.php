@@ -15,11 +15,12 @@ trait TransactionValidationRules
     protected function transactionRules(): array
     {
         return [
-            'type' => ['required', 'string', Rule::in(TransactionType::values())],
-            'category_id' => ['required', 'integer'],
-            'contact_id' => ['nullable', 'integer'], // legacy single person
+            'type' => ['required', 'string', Rule::in(array_merge(TransactionType::values(), ['transfer']))],
+            'category_id' => ['nullable', 'integer'],
+            'contact_id' => ['nullable', 'integer'],
             'contact_ids' => ['nullable', 'array', 'max:10'],
             'contact_ids.*' => ['integer', 'distinct'],
+            'transfer_contact_id' => ['nullable', 'integer'],
             'primary_amount' => ['nullable', 'numeric'],
             'secondary_amount' => ['nullable', 'numeric'],
             'settled_amount' => ['nullable', 'numeric', 'min:0'],

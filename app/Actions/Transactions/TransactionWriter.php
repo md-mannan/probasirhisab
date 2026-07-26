@@ -53,6 +53,11 @@ class TransactionWriter
     private function persist(User $user, array $data, ?Transaction $transaction): Transaction
     {
         $isUpdate = $transaction !== null;
+
+        if (! $isUpdate && in_array($data['type'], ['transfer', 'transfer_out'], true)) {
+            return $this->persistTransfer($user, $data);
+        }
+
         $isObligation = in_array($data['type'], ['payable', 'receivable'], true);
 
         $primaryCurrency = $user->primary_currency ?: 'KWD';
@@ -138,6 +143,151 @@ class TransactionWriter
         });
     }
 
+    /**
+     * Create a paired transfer_out + transfer_in transaction for a user-initiated transfer.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function persistTransfer(User $user, array $data): Transaction
+    {
+        $primaryCurrency = $user->primary_currency ?: 'KWD';
+        $secondaryCurrency = $user->secondary_currency ?: 'BDT';
+
+        [$primaryAmount, $secondaryAmount, $rate] = $this->resolveAmounts($data, $primaryCurrency, $secondaryCurrency);
+
+        $contactIds = $this->resolveContactIds($user, $data);
+        $transferContactId = $this->resolveTransferContactId($user, $data);
+
+        if (count($contactIds) !== 1) {
+            throw ValidationException::withMessages([
+                'contact_ids' => 'Select exactly one source contact for transfer.',
+            ]);
+        }
+
+        if ($transferContactId === null) {
+            throw ValidationException::withMessages([
+                'transfer_contact_id' => 'Please select a destination contact.',
+            ]);
+        }
+
+        $sourceContactId = $contactIds[0];
+
+        if ($sourceContactId === $transferContactId) {
+            throw ValidationException::withMessages([
+                'transfer_contact_id' => 'The from and to contacts must be different.',
+            ]);
+        }
+
+        $sourceContact = Contact::query()->findOrFail($sourceContactId);
+        $destContact = Contact::query()->findOrFail($transferContactId);
+
+        if ($destContact->member_user_id === null) {
+            throw ValidationException::withMessages([
+                'transfer_contact_id' => 'The destination contact is not linked to a system user.',
+            ]);
+        }
+
+        $recipientId = (int) $destContact->member_user_id;
+
+        if ($recipientId === $user->id) {
+            throw ValidationException::withMessages([
+                'transfer_contact_id' => 'You cannot transfer to your own account.',
+            ]);
+        }
+
+        $this->assertSufficientCash($user, 'transfer_out', $primaryAmount, null);
+
+        $senderCategory = $this->findOrCreateCategory($user, 'transfer_out');
+        $recipient = User::query()->findOrFail($recipientId);
+        $recipientCategory = $this->findOrCreateCategory($recipient, 'transfer_in');
+
+        $note = ($data['note'] ?? null) ? trim($data['note']) : null;
+        $source = ($data['source'] ?? null) ? trim($data['source']) : null;
+
+        $outNote = $note !== null
+            ? "Transfer to {$destContact->name}: {$note}"
+            : "Transfer to {$destContact->name}";
+
+        $inNote = $note !== null
+            ? "Transfer from {$sourceContact->name}: {$note}"
+            : "Transfer from {$sourceContact->name}";
+
+        $nextSortForSender = TransactionListSortOrder::nextForUser($user->id);
+        $nextSortForRecipient = TransactionListSortOrder::nextForUser($recipientId);
+
+        return DB::transaction(function () use (
+            $user,
+            $recipientId,
+            $data,
+            $primaryAmount,
+            $secondaryAmount,
+            $rate,
+            $primaryCurrency,
+            $secondaryCurrency,
+            $sourceContactId,
+            $transferContactId,
+            $senderCategory,
+            $recipientCategory,
+            $outNote,
+            $inNote,
+            $source,
+            $nextSortForSender,
+            $nextSortForRecipient,
+        ): Transaction {
+            $out = Transaction::query()->create([
+                'user_id' => $user->id,
+                'sort_order' => $nextSortForSender,
+                'type' => 'transfer_out',
+                'category_id' => $senderCategory->id,
+                'contact_id' => null,
+                'amount' => $primaryAmount,
+                'secondary_amount' => $secondaryAmount,
+                'settled_amount' => null,
+                'currency' => $primaryCurrency,
+                'secondary_currency' => $secondaryCurrency,
+                'rate' => $rate,
+                'occurred_on' => $data['occurred_on'],
+                'note' => $outNote,
+                'source' => $source,
+            ]);
+
+            $out->contacts()->syncWithPivotValues(
+                [$transferContactId],
+                ['user_id' => $user->id],
+            );
+
+            $in = Transaction::query()->create([
+                'user_id' => $recipientId,
+                'sort_order' => $nextSortForRecipient,
+                'type' => 'transfer_in',
+                'category_id' => $recipientCategory->id,
+                'contact_id' => null,
+                'amount' => $primaryAmount,
+                'secondary_amount' => $secondaryAmount,
+                'settled_amount' => null,
+                'currency' => $primaryCurrency,
+                'secondary_currency' => $secondaryCurrency,
+                'rate' => $rate,
+                'occurred_on' => $data['occurred_on'],
+                'note' => $inNote,
+                'source' => $source,
+            ]);
+
+            $in->contacts()->syncWithPivotValues(
+                [$sourceContactId],
+                ['user_id' => $recipientId],
+            );
+
+            $this->recomputeSettledAmount($out);
+            $this->recomputeSettledAmount($in);
+
+            $this->ledgerSync->syncForTransaction($out->fresh(['settlements']) ?? $out);
+            $this->ledgerSync->syncForTransaction($in->fresh(['settlements']) ?? $in);
+
+            return $out;
+        });
+    }
+
     /** Recompute settled_amount as the sum of settlement records for the transaction. */
     private function recomputeSettledAmount(Transaction $transaction): void
     {
@@ -190,6 +340,35 @@ class TransactionWriter
 
         return $categories->firstWhere('name', $preferredName)?->id
             ?? $categories->first()?->id;
+    }
+
+    private function findOrCreateCategory(User $user, string $type): Category
+    {
+        $ownerIds = SharedCatalog::visibleOwnerIds($user);
+
+        $category = Category::query()
+            ->whereIn('user_id', $ownerIds)
+            ->where('type', $type)
+            ->orderBy('name')
+            ->first();
+
+        if ($category) {
+            return $category;
+        }
+
+        $name = match ($type) {
+            'transfer_out' => 'Transfer out',
+            'transfer_in' => 'Transfer in',
+            'settle_payable' => 'Settle payable',
+            'settle_receivable' => 'Settle receivable',
+            default => ucfirst($type),
+        };
+
+        return Category::query()->create([
+            'user_id' => $user->id,
+            'name' => $name,
+            'type' => $type,
+        ]);
     }
 
     /**
@@ -285,6 +464,33 @@ class TransactionWriter
     }
 
     /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveTransferContactId(User $user, array $data): ?int
+    {
+        $id = $data['transfer_contact_id'] ?? null;
+
+        if ($id === null || $id === '') {
+            return null;
+        }
+
+        $contactId = (int) $id;
+
+        $owned = Contact::query()
+            ->whereIn('user_id', SharedCatalog::visibleOwnerIds($user))
+            ->where('id', $contactId)
+            ->exists();
+
+        if (! $owned) {
+            throw ValidationException::withMessages([
+                'transfer_contact_id' => 'Please select a valid person.',
+            ]);
+        }
+
+        return $contactId;
+    }
+
+    /**
      * The opening "already settled" amount supplied at creation. Applies only to
      * payable/receivable and cannot exceed the total. Returns the amount (or null).
      *
@@ -328,17 +534,17 @@ class TransactionWriter
         }
     }
 
-    /**
-     * Expense/receivable consume cash. On update, credit back the transaction's own
-     * previous outflow before checking (matches the original update guard).
-     */
+     /**
+      * Expense/receivable/transfer_out consume cash. On update, credit back the transaction's own
+      * previous outflow before checking (matches the original update guard).
+      */
     private function assertSufficientCash(
         User $user,
         string $type,
         ?float $primaryAmount,
         ?Transaction $transaction,
     ): void {
-        if (! in_array($type, ['expense', 'receivable'], true)) {
+        if (! in_array($type, ['expense', 'receivable', 'transfer_out'], true)) {
             return;
         }
 
@@ -346,7 +552,7 @@ class TransactionWriter
         $balance = PrimaryCashBalance::forUserId($user->id);
 
         $oldOut = 0.0;
-        if ($transaction !== null && in_array($transaction->type, ['expense', 'receivable'], true)) {
+        if ($transaction !== null && in_array($transaction->type, ['expense', 'receivable', 'transfer_out'], true)) {
             $oldOut = abs((float) $transaction->amount);
         }
 

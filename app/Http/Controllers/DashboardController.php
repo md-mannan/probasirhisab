@@ -137,8 +137,10 @@ class DashboardController extends Controller
                 $yearly[$yearKey] = self::emptyTrendBucket();
             }
 
-            if ($t->type === 'income') {
-                $incomeCount++;
+            if ($t->type === 'income' || $t->type === 'transfer_in') {
+                if ($t->type === 'income') {
+                    $incomeCount++;
+                }
                 $incomePrimarySum += $absPrimary;
                 if ($amountSecondary !== null) {
                     $incomeSecondarySum += abs($amountSecondary);
@@ -157,13 +159,15 @@ class DashboardController extends Controller
                     $monthly[$monthKey]['income_secondary'] += abs($amountSecondary);
                     $yearly[$yearKey]['income_secondary'] += abs($amountSecondary);
                 }
-            } elseif ($t->type === 'expense') {
-                $expenseCount++;
-                $expensePrimarySum += $absPrimary;
-                if ($amountSecondary !== null) {
-                    $expenseSecondarySum += abs($amountSecondary);
-                } else {
-                    $expenseSecondaryComplete = false;
+            } elseif ($t->type === 'expense' || $t->type === 'transfer_out') {
+                if ($t->type === 'expense') {
+                    $expenseCount++;
+                    $expensePrimarySum += $absPrimary;
+                    if ($amountSecondary !== null) {
+                        $expenseSecondarySum += abs($amountSecondary);
+                    } else {
+                        $expenseSecondaryComplete = false;
+                    }
                 }
                 $cashPrimary -= $absPrimary;
                 if ($amountSecondary !== null) {

@@ -60,14 +60,14 @@ class BalanceSheetController extends Controller
                 $remainingSecondary = $remainingPrimary * $ratioSecondary;
             }
 
-            if ($t->type === 'income') {
+            if ($t->type === 'income' || $t->type === 'transfer_in') {
                 $cashPrimary += $absPrimary;
                 if ($amountSecondary !== null) {
                     $cashSecondary += abs($amountSecondary);
                 } else {
                     $cashSecondaryComplete = false;
                 }
-            } elseif ($t->type === 'expense') {
+            } elseif ($t->type === 'expense' || $t->type === 'transfer_out') {
                 $cashPrimary -= $absPrimary;
                 if ($amountSecondary !== null) {
                     $cashSecondary -= abs($amountSecondary);

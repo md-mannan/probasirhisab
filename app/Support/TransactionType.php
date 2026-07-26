@@ -14,6 +14,8 @@ final class TransactionType
             'expense' => 'Expense',
             'payable' => 'Payable',
             'receivable' => 'Receivable',
+            'transfer_out' => 'Transfer out',
+            'transfer_in' => 'Transfer in',
         ];
     }
 

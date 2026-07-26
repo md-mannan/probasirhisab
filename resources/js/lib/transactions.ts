@@ -6,11 +6,16 @@ import { parseAmount } from '@/lib/money';
 
 /** Cash direction of a row type: -1 = outflow, +1 = inflow. */
 export function directionForType(type: string): -1 | 1 {
-    if (type === 'expense' || type === 'payable' || type === 'settle_payable') {
+    if (
+        type === 'expense' ||
+        type === 'payable' ||
+        type === 'settle_payable' ||
+        type === 'transfer_out'
+    ) {
         return -1;
     }
 
-    return 1; // income + receivable + settle_receivable
+    return 1;
 }
 
 /** Whether a transaction type is a settleable obligation. */

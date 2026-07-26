@@ -16,6 +16,8 @@ final class CategoryType
             'receivable' => 'Receivable',
             'settle_payable' => 'Settle payable',
             'settle_receivable' => 'Settle receivable',
+            'transfer_out' => 'Transfer out',
+            'transfer_in' => 'Transfer in',
         ];
     }
 

@@ -125,7 +125,8 @@ function directionForType(type: string): number {
     if (
         type === 'expense' ||
         type === 'payable' ||
-        type === 'settle_payable'
+        type === 'settle_payable' ||
+        type === 'transfer_out'
     ) {
         return -1;
     }

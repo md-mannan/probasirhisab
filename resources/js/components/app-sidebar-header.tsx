@@ -33,7 +33,7 @@ export function AppSidebarHeader({
 
                 {auth.user && (
                     <div className="ml-auto flex shrink-0 items-center gap-2">
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                                 <Button size="sm">
                                     <Plus className="mr-1 size-4" />
@@ -41,7 +41,7 @@ export function AppSidebarHeader({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                {(['income', 'expense', 'payable', 'receivable'] as const).map((type) => (
+                                {(['income', 'expense', 'payable', 'receivable', 'transfer'] as const).map((type) => (
                                     <DropdownMenuItem key={type} asChild>
                                         <Link href={transactionsIndex.url({ query: { create: type } })} className="capitalize">
                                             {type}
@@ -50,7 +50,7 @@ export function AppSidebarHeader({
                                 ))}
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
