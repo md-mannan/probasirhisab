@@ -27,7 +27,8 @@ export async function savePdfFromIsolatedHtml(
         quality: 0.95,
     };
     const jsPDFOpts =
-        (html2pdfSettings.jsPDF as ConstructorParameters<typeof jsPDF>[0]) ?? {};
+        (html2pdfSettings.jsPDF as ConstructorParameters<typeof jsPDF>[0]) ??
+        {};
     const html2canvasOpts =
         (html2pdfSettings.html2canvas as Record<string, unknown> | undefined) ?? {};
 
@@ -39,8 +40,10 @@ export async function savePdfFromIsolatedHtml(
     document.body.appendChild(iframe);
 
     const doc = iframe.contentDocument;
+
     if (!doc) {
         iframe.remove();
+
         throw new Error('PDF iframe document unavailable');
     }
 
@@ -58,6 +61,7 @@ html,body{margin:0;padding:8px 10px;background:#ffffff;color:#111111;}
         window.setTimeout(resolve, 450);
     });
     await doc.fonts.ready;
+
     try {
         await doc.fonts.load('400 16px "Noto Sans Bengali"');
         await doc.fonts.load('400 16px "Noto Sans"');
@@ -76,8 +80,19 @@ html,body{margin:0;padding:8px 10px;background:#ffffff;color:#111111;}
         });
 
         const pdf = new jsPDF(jsPDFOpts);
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
+        let pageWidth = pdf.internal.pageSize.getWidth();
+        let pageHeight = pdf.internal.pageSize.getHeight();
+        const orientationOpt =
+            typeof jsPDFOpts === 'string'
+                ? jsPDFOpts
+                : (jsPDFOpts as Record<string, unknown>).orientation;
+        const isLandscape =
+            orientationOpt === 'landscape' || orientationOpt === 'l';
+
+        if (isLandscape && pageWidth < pageHeight) {
+            [pageWidth, pageHeight] = [pageHeight, pageWidth];
+        }
+
         const innerWidth = pageWidth - margin[1] - margin[3];
         const innerHeight = pageHeight - margin[0] - margin[2];
 
@@ -88,6 +103,7 @@ html,body{margin:0;padding:8px 10px;background:#ffffff;color:#111111;}
 
         const pageCanvas = document.createElement('canvas');
         const pageCtx = pageCanvas.getContext('2d');
+
         if (!pageCtx) {
             throw new Error('Canvas 2D context unavailable');
         }

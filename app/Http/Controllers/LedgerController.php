@@ -62,11 +62,9 @@ class LedgerController extends Controller
                 'settlement:id,transaction_id,paid_on,amount,note,category_id',
                 'settlement.category:id,name,type',
             ])
-            // Chronological running balance (independent of drag-order on /transactions):
-            ->orderBy('ledger_entries.occurred_on')
             ->orderByRaw('coalesce(ts.sort_order, t.sort_order) is null asc')
             ->orderByRaw('coalesce(ts.sort_order, t.sort_order) asc')
-            // within a transaction row: show the base transaction line first, then settlement lines
+            ->orderBy('ledger_entries.occurred_on')
             ->orderByRaw('ledger_entries.settlement_id is null desc')
             ->orderByDesc('ledger_entries.id')
             ->limit(self::ROW_LIMIT)

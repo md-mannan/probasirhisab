@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Eye, Printer, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,7 +78,10 @@ export default function LedgerIndex({
 
     const typeEntries = useMemo(() => Object.entries(types), [types]);
 
-    const typeLabel = (type: string) => types[type] ?? type;
+    const typeLabel = useCallback(
+        (type: string) => types[type] ?? type,
+        [types],
+    );
 
     const dateRangeInvalid = Boolean(dateFrom && dateTo && dateFrom > dateTo);
 
@@ -202,7 +205,7 @@ export default function LedgerIndex({
         lines,
         tableSearch,
         filterType,
-        types,
+        typeLabel,
         primaryDecimals,
         secondaryDecimals,
         dateFrom,
@@ -262,7 +265,7 @@ export default function LedgerIndex({
             <div className="space-y-6 py-4 pb-6 sm:py-6">
                 <Heading
                     title="Ledger"
-                    description="Posted entries from your transactions (chronological running balance)"
+                    description="Posted entries from your transactions"
                 />
 
                 {listMeta?.truncated ? (
@@ -479,7 +482,7 @@ export default function LedgerIndex({
                                     <TooltipProvider delayDuration={150}>
                                         <table className="w-full min-w-[980px] table-fixed border-separate border-spacing-0 text-sm leading-snug font-normal">
                                             <colgroup>
-                                                <col className="w-[3.5%]" />
+                                                 <col className="w-[3.5%]" />
                                                 <col className="w-[9%]" />
                                                 <col className="w-[10%]" />
                                                 <col className="w-[28%] min-w-0" />
